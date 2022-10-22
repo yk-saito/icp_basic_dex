@@ -19,15 +19,19 @@ echo $ROOT_PRINCIPAL
 # ---TODO: DELETE---
 dfx start --clean --background
 # -------------------
-dfx canister create HogeDIP20
-dfx canister create PiyoDIP20
+# register, build, and deploy a dapp
+dfx deploy HogeDIP20 --argument="(\"Token Hoge Logo\", \"Token Hoge\", \"THG\", 8, 10000000000000000, $ROOT_PRINCIPAL, 10000)"
+dfx deploy PiyoDIP20 --argument="(\"Token Piyo Logo\", \"Token Piyo\", \"TPY\", 8, 10000000000000000, $ROOT_PRINCIPAL, 10000)"
 
-dfx build HogeDIP20
-dfx build PiyoDIP20
+# dfx canister create HogeDIP20
+# dfx canister create PiyoDIP20
+
+# dfx build HogeDIP20
+# dfx build PiyoDIP20
 
 # deploy token
 # Installs compiled code in a canister.
-dfx canister install HogeDIP20 --argument="(\"Token Hoge Logo\", \"Token Hoge\", \"THG\", 8, 10000000000000000, $ROOT_PRINCIPAL, 10000)"
-dfx canister install PiyoDIP20 --argument="(\"Token Piyo Logo\", \"Token Piyo\", \"TPY\", 8, 10000000000000000, $ROOT_PRINCIPAL, 10000)"
+# dfx canister install HogeDIP20 --argument="(\"Token Hoge Logo\", \"Token Hoge\", \"THG\", 8, 10000000000000000, $ROOT_PRINCIPAL, 10000)"
+# dfx canister install PiyoDIP20 --argument="(\"Token Piyo Logo\", \"Token Piyo\", \"TPY\", 8, 10000000000000000, $ROOT_PRINCIPAL, 10000)"
 
 # set fees
