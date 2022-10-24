@@ -1,7 +1,7 @@
 import Principal "mo:base/Principal";
 import HashMap "mo:base/HashMap";
 
-// type Token = Principal;
+import Types "types";
 
 module {
     public class Book() {
@@ -10,15 +10,15 @@ module {
         // 0 : initCapacity
         // Principal.equal : Keyeq
         // Principal.hash : keyHash
-        var book = HashMap.HashMap<Principal, HashMap.HashMap<Principal, Nat>>(0, Principal.equal, Principal.hash);
+        var book = HashMap.HashMap<Principal, HashMap.HashMap<Types.Token, Nat>>(0, Principal.equal, Principal.hash);
 
         // Principal(`user`)に紐づいたトークンと残高を取得
-        public func get(user : Principal) : ?HashMap.HashMap<Principal, Nat> {
+        public func get(user : Principal) : ?HashMap.HashMap<Types.Token, Nat> {
             return book.get(user);
         };
 
         // ユーザーの預け入れを記録する
-        public func addTokens(user : Principal, token : Principal, amount : Nat) {
+        public func addTokens(user : Principal, token : Types.Token, amount : Nat) {
             // ユーザーのデータがあるかどうか
             switch (book.get(user)) {
                 // ユーザーデータあり
@@ -45,7 +45,7 @@ module {
         };
 
         // DEXからトークンを引き出す際に呼び出される関数。更新された残高を返す。
-        public func removeTokens(user : Principal, token : Principal, amount : Nat) : ?Nat {
+        public func removeTokens(user : Principal, token : Types.Token, amount : Nat) : ?Nat {
             // ユーザーのデータがあるかどうか
             switch (book.get(user)) {
                 // ユーザーデータあり
