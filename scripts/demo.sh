@@ -46,6 +46,7 @@ dfx identity use user1
 dfx canister call HogeDIP20 approve '(principal '\"$DEX_PRINCIPAL\"', 100000)'
 
 # deposit
+echo '===== deposit() ====='
 dfx canister call icp_basic_dex_backend deposit '(principal '\"$HogeDIP20_PRINCIPAL\"')'
 ## (variant { Ok = 100_000 : nat })
 
@@ -57,7 +58,12 @@ dfx canister call HogeDIP20 balanceOf '(principal '\"$USER1_PRINCIPAL\"')'
 dfx canister call HogeDIP20 balanceOf '(principal '\"$DEX_PRINCIPAL\"')'
 ## (100_000 : nat)
 
+# user1がDEXに預けたトークンのデータを確認
+echo '===== getBalances() ====='
+dfx canister call icp_basic_dex_backend getBalances
+
 # ===== TEST withdraw (DEX -> user1) =====
+echo '===== withdraw() ====='
 dfx canister call icp_basic_dex_backend withdraw '(principal '\"$HogeDIP20_PRINCIPAL\"', 10000, principal '\"$USER1_PRINCIPAL\"')'
 
 # user1の残高チェック
@@ -67,3 +73,12 @@ dfx canister call HogeDIP20 balanceOf '(principal '\"$USER1_PRINCIPAL\"')'
 # DEXの残高チェック
 dfx canister call HogeDIP20 balanceOf '(principal '\"$DEX_PRINCIPAL\"')'
 ## (80_000 : nat)
+
+# user1がDEXに預けたトークンのデータが更新されているか確認
+echo '===== getBalances() ====='
+dfx canister call icp_basic_dex_backend getBalances
+
+# ===== 後始末 =====
+dfx identity use default
+dfx identity remove user1
+dfx identity remove user2
