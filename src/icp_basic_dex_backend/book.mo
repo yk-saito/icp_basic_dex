@@ -1,24 +1,24 @@
 import Principal "mo:base/Principal";
 import HashMap "mo:base/HashMap";
 
-import Types "types";
+import T "types";
 
 module {
     public class Book() {
 
         // ユーザーとトークンの種類・量をマッピング
         // 0 : initCapacity
-        // Principal.equal : Keyeq
+        // Principal.equal : keyEq
         // Principal.hash : keyHash
-        var book = HashMap.HashMap<Principal, HashMap.HashMap<Types.Token, Nat>>(0, Principal.equal, Principal.hash);
+        var book = HashMap.HashMap<Principal, HashMap.HashMap<T.Token, Nat>>(0, Principal.equal, Principal.hash);
 
         // Principal(`user`)に紐づいたトークンと残高を取得
-        public func get(user : Principal) : ?HashMap.HashMap<Types.Token, Nat> {
+        public func get(user : Principal) : ?HashMap.HashMap<T.Token, Nat> {
             return book.get(user);
         };
 
         // ユーザーの預け入れを記録する
-        public func addTokens(user : Principal, token : Types.Token, amount : Nat) {
+        public func addTokens(user : Principal, token : T.Token, amount : Nat) {
             // ユーザーのデータがあるかどうか
             switch (book.get(user)) {
                 // ユーザーデータあり
@@ -45,7 +45,7 @@ module {
         };
 
         // DEXからトークンを引き出す際に呼び出される関数。更新された残高を返す。
-        public func removeTokens(user : Principal, token : Types.Token, amount : Nat) : ?Nat {
+        public func removeTokens(user : Principal, token : T.Token, amount : Nat) : ?Nat {
             // ユーザーのデータがあるかどうか
             switch (book.get(user)) {
                 // ユーザーデータあり
@@ -77,6 +77,32 @@ module {
                 // ユーザーデータなし
                 case (null) {
                     return (null);
+                };
+            };
+        };
+
+        // ユーザーが`book`内に`amount`分のトークンを保有しているかをチェックする
+        public func hasEnoughBalance(user : Principal, token : T.Token, amount : Nat) : Bool {
+            // ユーザーデータがあるかどうか
+            switch (book.get(user)) {
+                // ユーザーデータあり
+                case (?token_balance) {
+                    // トークンが記録されているかどうか
+                    switch (token_balance.get(token)) {
+                        // 記録あり
+                        case (?balance) {
+                            // `amount`以上残高ありで`true`、なしで`false`を返す
+                            return (balance >= amount);
+                        };
+                        // 記録なし
+                        case (null) {
+                            return (false);
+                        };
+                    };
+                };
+                // ユーザーデータなし
+                case (null) {
+                    return (false);
                 };
             };
         };

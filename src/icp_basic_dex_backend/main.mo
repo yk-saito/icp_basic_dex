@@ -3,21 +3,28 @@ import Debug "mo:base/Debug";
 import Iter "mo:base/Iter";
 import Principal "mo:base/Principal";
 
-import Types "types";
 import Book "book";
+import Exchange "exchange";
+import T "types";
 
 actor class Dex() = this {
+  // 売り注文のIDを管理する変数
+  var last_id : Nat32 = 0;
 
   // ユーザーの残高を管理するモジュール
   private var book = Book.Book();
 
-  public shared (msg) func deposit(token : Types.Token) : async Types.DepositReceipt {
+  // 売り注文を管理するモジュール
+  private var exchange = Exchange.Exchange(book);
+
+  // ===== DEPOSIT / WITHDRAW =====
+  public shared (msg) func deposit(token : T.Token) : async T.DepositReceipt {
     Debug.print(
       "Message caller: " # Principal.toText(msg.caller) # "| Deposit Token: " # Principal.toText(token),
     );
 
     // tokenをDIP20のアクターにキャスト
-    let dip20 = actor (Principal.toText(token)) : Types.DIPInterface;
+    let dip20 = actor (Principal.toText(token)) : T.DIPInterface;
 
     // DIPのfeeを取得
     let dip_fee = await fetch_dif_fee(token);
@@ -49,11 +56,11 @@ actor class Dex() = this {
     return #Ok(balance - dip_fee);
   };
 
-  public shared (msg) func withdraw(token : Types.Token, amount : Nat, address : Principal) : async Types.WithdrawReceipt {
+  public shared (msg) func withdraw(token : T.Token, amount : Nat, address : Principal) : async T.WithdrawReceipt {
     // TODO: ユーザーが登録したオーダーを削除
 
     // キャニスターIDをDIP20Interfaceにキャスト
-    let dip20 = actor (Principal.toText(token)) : Types.DIPInterface;
+    let dip20 = actor (Principal.toText(token)) : T.DIPInterface;
 
     // ユーザーへトークンを送る
     let txReceipt = await dip20.transfer(address, amount);
@@ -78,22 +85,103 @@ actor class Dex() = this {
     return #Ok(amount);
   };
 
+  // ===== ORDER =====
+  // 売り注文を登録する
+  public shared (msg) func placeOrder(
+    from : T.Token,
+    fromAmount : Nat,
+    to : T.Token,
+    toAmount : Nat,
+  ) : async T.PlaceOrderReceipt {
+
+    // TODO: check `create_trading_pair()`
+
+    // ユーザーが`from`トークンで別の売り注文を出していないか確認
+    for (order in exchange.getOrders().vals()) {
+      // Debug.print(
+      //   "check user :" # Principal.toText(msg.caller) # " vs " # Principal.toText(order.owner) # "\ncheck token :" # Principal.toText(from) # " vs " # Principal.toText(order.from),
+      // );
+      if (msg.caller == order.owner and from == order.from) {
+        return (#Err(#OrderBookFull));
+      };
+    };
+
+    // ユーザーの残高が足りるかチェック
+    if (book.hasEnoughBalance(msg.caller, from, fromAmount) == false) {
+      Debug.print("Not enough balance for user " # Principal.toText(msg.caller) # " in token " # Principal.toText(from));
+      return (#Err(#InvalidOrder));
+    };
+
+    let id : Nat32 = nextId();
+    let owner = msg.caller;
+
+    // `Order`データ構造を作成
+    let order : T.Order = {
+      id;
+      owner;
+      from;
+      fromAmount;
+      to;
+      toAmount;
+    };
+    exchange.addOrder(order);
+
+    return (#Ok(exchange.getOrder(id)));
+  };
+
+  // 売り注文をキャンセルする
+  public shared (msg) func cancelOrder(order_id : T.OrderId) : async T.CancelOrderReceipt {
+    switch (exchange.getOrder(order_id)) {
+      // 注文IDが存在する
+      case (?order) {
+        // キャンセルしようとしているユーザーと、売り注文のオーナーが一致するかチェック
+        if (msg.caller != order.owner) {
+          return (#Err(#NotAllowed));
+        };
+        // 売り注文のキャンセルを実行
+        switch (exchange.cancelOrder(order_id)) {
+          // キャンセル成功
+          case (?cancel_order) {
+            return (#Ok(cancel_order.id));
+          };
+          // キャンセル失敗（removenに失敗）
+          case (null) {
+            return (#Err(#NotExistingOrder));
+          };
+        };
+      };
+      // 注文IDが存在しない
+      case (null) {
+        return (#Err(#NotExistingOrder));
+      };
+    };
+  };
+
+  public func getOrders() : async ([T.Order]) {
+    return (exchange.getOrders());
+  };
+
   // Internal functions
-  private func fetch_dif_fee(token : Types.Token) : async Nat {
-    let dip20 = actor (Principal.toText(token)) : Types.DIPInterface;
+  private func fetch_dif_fee(token : T.Token) : async Nat {
+    let dip20 = actor (Principal.toText(token)) : T.DIPInterface;
     let metadata = await dip20.getMetadata();
     metadata.fee;
   };
 
+  private func nextId() : Nat32 {
+    last_id += 1;
+    return (last_id);
+  };
+
   // ===== DEX STATE FUNCTIONS =====
   // ユーザーがDEXに預けたトークンの残高を取得する
-  public shared query (msg) func getBalances() : async [Types.Balance] {
+  public shared query (msg) func getBalances() : async [T.Balance] {
     switch (book.get(msg.caller)) {
       case (?token_balance) {
         // 配列の値の順番を保ったまま、関数で各値を変換する(`(Principal, Nat)` -> `Balace`)。
-        Array.map<(Principal, Nat), Types.Balance>(
+        Array.map<(Principal, Nat), T.Balance>(
           Iter.toArray(token_balance.entries()),
-          func(key : Principal, value : Nat) : Types.Balance {
+          func(key : Principal, value : Nat) : T.Balance {
             {
               owner = msg.caller;
               token = key;
