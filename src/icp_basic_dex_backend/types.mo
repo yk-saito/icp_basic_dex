@@ -29,7 +29,7 @@ module {
 
     public type DIPInterface = actor {
         allowance : (owner : Principal, spender : Principal) -> async Nat;
-        faucet : (to : Principal, value : Nat) -> async TxReceipt;
+        balanceOf : (who : Principal) -> async Nat;
         getMetadata : () -> async Metadata;
         mint : (to : Principal, value : Nat) -> async TxReceipt;
         transfer : (to : Principal, value : Nat) -> async TxReceipt;
@@ -49,6 +49,7 @@ module {
         #Err : {
             #BalanceLow;
             #TransferFailure;
+            #DeleteOrderFailure;
         };
     };
 

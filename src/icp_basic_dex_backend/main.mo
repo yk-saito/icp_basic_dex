@@ -57,8 +57,6 @@ actor class Dex() = this {
   };
 
   public shared (msg) func withdraw(token : T.Token, amount : Nat, address : Principal) : async T.WithdrawReceipt {
-    // TODO: ユーザーが登録したオーダーを削除
-
     // キャニスターIDをDIP20Interfaceにキャスト
     let dip20 = actor (Principal.toText(token)) : T.DIPInterface;
 
@@ -80,6 +78,26 @@ actor class Dex() = this {
         return #Err(#BalanceLow);
       };
       case _ {};
+    };
+
+    // TODO: ユーザーが登録したオーダーを削除
+    for (order in exchange.getOrders().vals()) {
+      if (msg.caller == order.owner and token == order.from) {
+        // `DEX`内のユーザー預け入れ残高とオーダーのfromAmountと比較
+        if (book.hasEnoughBalance(msg.caller, token, order.fromAmount) == false) {
+          switch (exchange.cancelOrder(order.id)) {
+            // キャンセル成功
+            case (?cancel_order) {
+              return (#Ok(amount));
+            };
+            // キャンセル失敗（removenに失敗）
+            case (null) {
+              return (#Err(#DeleteOrderFailure));
+            };
+          };
+        };
+        return #Ok(amount);
+      };
     };
 
     return #Ok(amount);

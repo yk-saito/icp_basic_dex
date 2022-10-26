@@ -48,7 +48,7 @@ echo -e '\n===== TEST DEPOSIT (user1 -> DEX) ====='
 dfx identity use user1
 
 # approveをコールして、DEXがユーザーの代わりにdepositすることを許可する
-dfx canister call HogeDIP20 approve '(principal '\"$DEX_PRINCIPAL\"', 100000)'
+dfx canister call HogeDIP20 approve '(principal '\"$DEX_PRINCIPAL\"', 10000)'
 
 echo -e '\n===== deposit() ====='
 dfx canister call icp_basic_dex_backend deposit '(principal '\"$HogeDIP20_PRINCIPAL\"')'
@@ -72,7 +72,7 @@ echo -e '\n===== TEST DEPOSIT (user2 -> DEX) ====='
 dfx identity use user2
 
 # approveをコールして、DEXがユーザーの代わりにdepositすることを許可する
-dfx canister call PiyoDIP20 approve '(principal '\"$DEX_PRINCIPAL\"', 100000)'
+dfx canister call PiyoDIP20 approve '(principal '\"$DEX_PRINCIPAL\"', 10000)'
 
 echo -e '\n===== deposit() ====='
 dfx canister call icp_basic_dex_backend deposit '(principal '\"$PiyoDIP20_PRINCIPAL\"')'
@@ -92,12 +92,12 @@ dfx canister call icp_basic_dex_backend getBalances
 
 
 # ===== TEST trading =====
-echo -e '\n===== TEST TRADING (user1 [HogeDIP:1000] <-> user2 [PiyoDIP20:1000]) ====='
+echo -e '\n===== TEST TRADING (user1 [HogeDIP:5000] <-> user2 [PiyoDIP20:5000]) ====='
 
-echo -e '\n===== placeOrder( HogeDIP20, 1000, PiyoDIP20, 1000 ) ====='
+echo -e '\n===== placeOrder( HogeDIP20, 5000, PiyoDIP20, 5000 ) ====='
 # 売り注文を出すユーザーに切り替え
 dfx identity use user1
-dfx canister call icp_basic_dex_backend placeOrder '(principal '\"$HogeDIP20_PRINCIPAL\"', 1000, principal '\"$PiyoDIP20_PRINCIPAL\"', 1000)'
+dfx canister call icp_basic_dex_backend placeOrder '(principal '\"$HogeDIP20_PRINCIPAL\"', 5000, principal '\"$PiyoDIP20_PRINCIPAL\"', 5000)'
 
 echo -e '\n===== getOrders() ====='
 dfx canister call icp_basic_dex_backend getOrders
@@ -106,19 +106,19 @@ echo -e '\n===== placeOrder( #Err(#OrderBookFull) ) ====='
 dfx canister call icp_basic_dex_backend placeOrder '(principal '\"$HogeDIP20_PRINCIPAL\"', 1000, principal '\"$PiyoDIP20_PRINCIPAL\"', 1000)'
 ## (variant { Err = variant { OrderBookFull } })
 
-echo -e '\n===== placeOrder( PiyoDIP20, 1000, HogeDIP20, 1000 ) [user2] ====='
+echo -e '\n===== placeOrder( PiyoDIP20, 5000, HogeDIP20, 5000 ) [user2] ====='
 # 売り注文を出すユーザーに切り替え
 dfx identity use user2
-dfx canister call icp_basic_dex_backend placeOrder '(principal '\"$PiyoDIP20_PRINCIPAL\"', 1000, principal '\"$HogeDIP20_PRINCIPAL\"', 1000)'
+dfx canister call icp_basic_dex_backend placeOrder '(principal '\"$PiyoDIP20_PRINCIPAL\"', 5000, principal '\"$HogeDIP20_PRINCIPAL\"', 5000)'
 
 echo -e '\n===== getOrders() ====='
 dfx canister call icp_basic_dex_backend getOrders
 
 # トレード後のユーザー残高を確認
-echo -e '\n# user2 Balances'
+echo -e '\n#----- user2 Balances ------'
 dfx canister call icp_basic_dex_backend getBalances
 
-echo -e '\n# user1 Balances'
+echo -e '\n#----- user1 Balances -----'
 # 残高を確認するユーザー "user1" に切り替え
 dfx identity use user1
 dfx canister call icp_basic_dex_backend getBalances
@@ -126,15 +126,22 @@ dfx canister call icp_basic_dex_backend getBalances
 
 # ===== TEST withdraw (DEX -> user1) =====
 echo  -e '\n===== withdraw() ====='
-dfx canister call icp_basic_dex_backend withdraw '(principal '\"$HogeDIP20_PRINCIPAL\"', 10000, principal '\"$USER1_PRINCIPAL\"')'
+
+echo -e '#------ Cleate order ------'
+dfx canister call icp_basic_dex_backend placeOrder '(principal '\"$HogeDIP20_PRINCIPAL\"', 5000, principal '\"$PiyoDIP20_PRINCIPAL\"', 5000)'
+echo -e '#------ get order ------'
+dfx canister call icp_basic_dex_backend getOrders
+
+echo -e '#------ withdraw & delete order ------'
+dfx canister call icp_basic_dex_backend withdraw '(principal '\"$HogeDIP20_PRINCIPAL\"', 5000, principal '\"$USER1_PRINCIPAL\"')'
+echo -e '#------ get order ------'
+dfx canister call icp_basic_dex_backend getOrders
 
 # user1の残高チェック
 dfx canister call HogeDIP20 balanceOf '(principal '\"$USER1_PRINCIPAL\"')'
-## (990_000 : nat)
 
 # DEXの残高チェック
 dfx canister call HogeDIP20 balanceOf '(principal '\"$DEX_PRINCIPAL\"')'
-## (80_000 : nat)
 
 # user1がDEXに預けたトークンのデータが更新されているか確認
 echo  -e '\n===== getBalances() ====='
