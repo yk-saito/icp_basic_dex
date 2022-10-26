@@ -20,8 +20,8 @@ echo $ROOT_PRINCIPAL
 dfx start --clean --background
 # -------------------
 # register, build, and deploy a dapp
-dfx deploy HogeDIP20 --argument="(\"Token Hoge Logo\", \"Token Hoge\", \"THG\", 8, 10000000000000000, $ROOT_PRINCIPAL, 10000)"
-dfx deploy PiyoDIP20 --argument="(\"Token Piyo Logo\", \"Token Piyo\", \"TPY\", 8, 10000000000000000, $ROOT_PRINCIPAL, 10000)"
+dfx deploy HogeDIP20 --argument="(\"Token Hoge Logo\", \"Token Hoge\", \"THG\", 8, 10000000000000000, $ROOT_PRINCIPAL, 0)"
+dfx deploy PiyoDIP20 --argument="(\"Token Piyo Logo\", \"Token Piyo\", \"TPY\", 8, 10000000000000000, $ROOT_PRINCIPAL, 0)"
 
 # dfx canister create HogeDIP20
 # dfx canister create PiyoDIP20

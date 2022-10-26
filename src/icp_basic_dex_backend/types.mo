@@ -29,7 +29,7 @@ module {
 
     public type DIPInterface = actor {
         allowance : (owner : Principal, spender : Principal) -> async Nat;
-        faucet : (to : Principal, value : Nat) -> async TxReceipt;
+        balanceOf : (who : Principal) -> async Nat;
         getMetadata : () -> async Metadata;
         mint : (to : Principal, value : Nat) -> async TxReceipt;
         transfer : (to : Principal, value : Nat) -> async TxReceipt;
@@ -38,7 +38,6 @@ module {
 
     public type DepositReceipt = {
         #Ok : Nat;
-        // #Err : DepositErr;
         #Err : {
             #BalanceLow;
             #TransferFailure;
@@ -47,10 +46,10 @@ module {
 
     public type WithdrawReceipt = {
         #Ok : Nat;
-        // #Err : WithdrawErr;
         #Err : {
             #BalanceLow;
             #TransferFailure;
+            #DeleteOrderFailure;
         };
     };
 
@@ -58,5 +57,33 @@ module {
         owner : Principal;
         token : Principal;
         amount : Nat;
+    };
+
+    // ====== ORDER =====
+    public type OrderId = Nat32;
+
+    public type Order = {
+        id : OrderId;
+        owner : Principal;
+        from : Token;
+        fromAmount : Nat;
+        to : Token;
+        toAmount : Nat;
+    };
+
+    public type PlaceOrderReceipt = {
+        #Ok : ?Order;
+        #Err : {
+            #InvalidOrder;
+            #OrderBookFull;
+        };
+    };
+
+    public type CancelOrderReceipt = {
+        #Ok : OrderId;
+        #Err : {
+            #NotAllowed;
+            #NotExistingOrder;
+        };
     };
 };
