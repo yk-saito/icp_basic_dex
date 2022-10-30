@@ -3,6 +3,7 @@ import './App.css';
 
 const App = () => {
   const [userTokens, setUserTokens] = useState([
+    // TODO: Delete
     {
       name: 'HOGE',
       balance: 100,
@@ -16,6 +17,7 @@ const App = () => {
   ])
 
   const [orders, setOrders] = useState([
+    // TODO: Delete
     {
       from: 'HOGE',
       fromAmount: 200,
@@ -35,11 +37,6 @@ const App = () => {
     to: '',
     toAmount: 0,
   })
-
-  const [from, setFrom] = useState('');
-  const [fromAmount, setFromAmount] = useState(0);
-  const [to, setTo] = useState('');
-  const [toAmount, setToAmount] = useState(0);
 
   const handleChangeOrder = (event) => {
     setOrder((prevState) => {
@@ -114,11 +111,6 @@ const App = () => {
             <div>
               <div>
                 <label>From</label>
-                {/* <input
-                  name="from"
-                  type="from"
-                  onChange={handleChangeOrder}
-                /> */}
                 <select
                   name="from"
                   type="from"
