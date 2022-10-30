@@ -177,12 +177,31 @@ td {
 }
 
 .form input {
-  background: rgb(178, 178, 178);
   padding: 0.5rem 1rem;
-  /* border: 1px solid #ff9900; */
   border-radius: 10px;
   display: block;
   margin: 0.3rem 1rem 0 0;
+  font-size: 1rem;
+}
+
+.form select {
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  display: block;
+  margin: 0.3rem 1rem 0 0;
+  font-size: 1rem;
+}
+
+.form select:invalid {
+  color: rgb(178, 178, 178);
+}
+
+.form select option {
+  color: black;
+}
+
+.form select option:first-child {
+  color: #bbb;
 }
 
 .list-order-area {
