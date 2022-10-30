@@ -1,0 +1,254 @@
+body {
+  font-family: sans-serif;
+  font-size: 1.5rem;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: rgb(178, 178, 178);
+  background: rgb(39, 35, 75);
+  ;
+}
+
+img {
+  max-width: 50vw;
+  max-height: 25vw;
+  display: block;
+  margin: auto;
+}
+
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: rgb(8, 2, 38);
+}
+
+li {
+  float: left;
+  display: block;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+}
+
+button {
+  padding: 0.4rem 1rem;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.app {
+  max-width: 1000px;
+  margin: 4rem auto;
+}
+
+#btn-title {
+  font-weight: 600;
+}
+
+.button-rainbow {
+  border: none;
+  background: linear-gradient(93.07deg, rgb(255, 215, 25) 0.61%, rgb(247, 84, 212) 33.98%, rgb(31, 209, 236) 65.84%, rgb(72, 250, 107) 97.7%);
+  padding: 2px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.3s;
+  transform: scale(1) translate3d(0, 0, 0) perspective(1px);
+}
+
+.button-rainbow:hover {
+  transform: scale(1.04) translate3d(0, 0, 0) perspective(1px);
+}
+
+.button-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background: rgb(255, 255, 255);
+  padding: 5px 12px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.token-list {
+  background-color: rgb(41, 49, 79);
+  padding: 8px;
+  margin-bottom: 30px;
+  border-radius: 10px;
+}
+
+.token-list table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.token-list th,
+td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid rgb(59, 62, 106);
+}
+
+.token-list button {
+  background: rgb(41, 49, 79);
+}
+
+.token-list button:hover {
+  background: rgb(178, 178, 178);
+  border: 1px solid rgb(8, 2, 38);
+  color: rgb(8, 2, 38);
+}
+
+.btn-deposit {
+  border: 1px solid rgb(0, 170, 105);
+  color: rgb(0, 170, 105);
+  margin-right: 1rem;
+}
+
+.btn-withdraw {
+  border: 1px solid rgb(202, 0, 0);
+  color: rgb(202, 0, 0);
+  margin-right: 1rem;
+}
+
+.btn-faucet {
+  border: 1px solid rgb(19, 94, 208);
+  color: rgb(19, 94, 208);
+}
+
+.create-order-area {
+  padding: 8px;
+  margin-bottom: 30px;
+}
+
+.create-order-area .title {
+  display: flex;
+}
+
+.create-order-area .title button {
+  padding: 0.4rem 1rem;
+  margin-left: 15px;
+  margin-top: 15px;
+  margin-bottom: 15px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 20px;
+  font-weight: 600;
+  border: 3px solid rgb(178, 178, 178);
+  background-color: rgb(39, 35, 75);
+  color: rgb(178, 178, 178);
+}
+
+.create-order-area span {
+  margin-left: 15px;
+  margin-right: 30px;
+}
+
+.create-order-area button {
+  background-color: rgb(8, 2, 38);
+  border: 1px solid rgb(0, 170, 105);
+  color: rgb(0, 170, 105);
+  margin-right: 1rem;
+}
+
+.create-order-area button:hover {
+  background: rgb(178, 178, 178);
+  border: 1px solid rgb(8, 2, 38);
+  color: rgb(8, 2, 38);
+}
+
+.form {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: rgb(8, 2, 38);
+  margin-bottom: 1rem;
+  border-radius: 10px;
+}
+
+.form>div {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.form input {
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  display: block;
+  margin: 0.3rem 1rem 0 0;
+  font-size: 1rem;
+}
+
+.form select {
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  display: block;
+  margin: 0.3rem 1rem 0 0;
+  font-size: 1rem;
+}
+
+.form select:invalid {
+  color: rgb(178, 178, 178);
+}
+
+.form select option {
+  color: black;
+}
+
+.form select option:first-child {
+  color: #bbb;
+}
+
+.list-order-area {
+  background-color: rgb(41, 49, 79);
+  padding: 8px;
+  /* margin: 8px; */
+  border-radius: 10px;
+
+}
+
+.order-list {
+  background-color: rgb(41, 49, 79);
+  padding: 8px;
+  margin-bottom: 30px;
+  border-radius: 10px;
+}
+
+.order-list table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.order-list th,
+td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid rgb(59, 62, 106);
+}
+
+.order-list button {
+  background: rgb(8, 2, 38);
+}
+
+.order-list button:hover {
+  background: rgb(178, 178, 178);
+  border: 1px solid rgb(8, 2, 38);
+  color: rgb(8, 2, 38);
+}
+
+.btn-buy {
+  border: 1px solid rgb(0, 170, 105);
+  color: rgb(0, 170, 105);
+  margin-right: 1rem;
+}
+
+.btn-cancel {
+  border: 1px solid rgb(202, 0, 0);
+  color: rgb(202, 0, 0);
+  margin-right: 1rem;
+}
