@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './App.css';
 
 const App = () => {
+  const [currentPrincipalId, setCurrentPrincipalId] = useState("");
+  // TODO: Delete if not used
+  const [currentAccountId, setCurrentAccountId] = useState("");
+
   const [userTokens, setUserTokens] = useState([
     // TODO: Delete
     {
@@ -55,109 +59,154 @@ const App = () => {
     setOrders(newOrders);
   }
 
+  // Connect Wallet handler
+  const handleConnectWallet = async () => {
+    if (currentPrincipalId) {
+      console.log("Connected!");
+      return;
+    }
+    try {
+      // Request a new connection to the Plug user.
+      // if declined, the method will throw an error.
+      const isConnected = await window.ic.plug.requestConnect();
+      console.log(`isConnected: ${isConnected}`);
+
+      // Set user info.
+      setCurrentPrincipalId(window.ic.plug.principalId);
+      setCurrentAccountId(window.ic.plug.accountId);
+    } catch (error) {
+      alert("Plug wallet connection was refused");
+      console.log(error);
+    }
+  };
+
   return (
     <>
+      {/* HEADER */}
       <ul>
         <li>SIMPLE DEX</li>
         <li style={{ float: 'right' }}>
-          <button id="button-connect" className="button-rainbow">
-            <div className="button-container">
-              {/* <img src="plug-light.svg" alt="Plug logo" class="plug-icon"> */}
-              <span id="btn-title">Connect with Plug</span>
-            </div>
-          </button>
+          {!currentPrincipalId && (
+            <button
+              id="button-connect"
+              className="button-rainbow"
+              onClick={handleConnectWallet}>
+              <div className="button-container">
+                {/* <img src="plug-light.svg" alt="Plug logo" class="plug-icon"> */}
+                <span id="btn-title">Connect with Plug</span>
+              </div>
+            </button>
+          )}
+          {currentPrincipalId && (
+            <button
+              id="button-connect"
+              className="button-rainbow"
+              onClick={handleConnectWallet}>
+              <div className="button-container">
+                {/* <img src="plug-light.svg" alt="Plug logo" class="plug-icon"> */}
+                <span id="btn-title">Plug Connected</span>
+              </div>
+            </button>
+          )}
         </li>
       </ul>
-      <main className="app">
 
+      <main className="app">
         {/* LIST USER TOKEN */}
-        <div className="token-list">
-          <p>Token</p>
-          <table>
-            <tbody>
-              <tr>
-                <th>Token</th>
-                <th>Balance</th>
-                <th>Fee</th>
-                <th>Action</th>
-              </tr>
-              {userTokens.map((token) => {
-                return (
-                  <tr key={token.name}>
-                    <td data-th="Token">{token.name}</td>
-                    <td data-th="Balance">{token.balance}</td>
-                    <td data-th="Fee">{token.fee}</td>
-                    <td data-th="Action">
-                      <div className="btn-token">
-                        <button className='btn-deposit'>Deposit</button>
-                        <button className='btn-withdraw'>Withdraw</button>
-                        <button className='btn-faucet'>Faucet</button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        {currentPrincipalId &&
+          <div className="token-list">
+            {/* {window.ic.plug.isConnected() && */}
+            <h2>User</h2>
+            <li>principal ID: {currentPrincipalId}</li>
+            <li>account ID: {currentAccountId}</li>
+            <table>
+              <tbody>
+                <tr>
+                  <th>Token</th>
+                  <th>Balance</th>
+                  <th>Fee</th>
+                  <th>Action</th>
+                </tr>
+                {userTokens.map((token) => {
+                  return (
+                    <tr key={token.name}>
+                      <td data-th="Token">{token.name}</td>
+                      <td data-th="Balance">{token.balance}</td>
+                      <td data-th="Fee">{token.fee}</td>
+                      <td data-th="Action">
+                        <div className="btn-token">
+                          <button className='btn-deposit'>Deposit</button>
+                          <button className='btn-withdraw'>Withdraw</button>
+                          <button className='btn-faucet'>Faucet</button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        }
 
         {/* CREATE ORDER */}
-        <div className="create-order-area">
-          <div className="title">
-            <p>CREATE ORDER</p>
-            <button>+</button>
-          </div>
-          <form className="form" onSubmit={handleSubmitOrder} >
-            <div>
-              <div>
-                <label>From</label>
-                <select
-                  name="from"
-                  type="from"
-                  onChange={handleChangeOrder}
-                  required>
-                  <option value="">Select token</option>
-                  <option value="HOGEDIP20">HOGEDIP20</option>
-                  <option value="PIYODIP20">PIYODIP20</option>
-                </select>
-              </div>
-              <div>
-                <label>Amount</label>
-                <input
-                  name="fromAmount"
-                  type="fromAmount"
-                  onChange={handleChangeOrder}
-                  required
-                />
-              </div>
-              <div>
-                <span>→</span>
-              </div>
-              <div>
-                <label>To</label>
-                <select
-                  name="to"
-                  type="to"
-                  onChange={handleChangeOrder}
-                  required>
-                  <option value="">Select token</option>
-                  <option value="HOGEDIP20">HOGEDIP20</option>
-                  <option value="PIYODIP20">PIYODIP20</option>
-                </select>
-              </div>
-              <div>
-                <label>Amount</label>
-                <input
-                  name="toAmount"
-                  type="toAmount"
-                  onChange={handleChangeOrder}
-                  required
-                />
-              </div>
+        {currentPrincipalId &&
+          <div className="create-order-area">
+            <div className="title">
+              <p>CREATE ORDER</p>
+              <button>+</button>
             </div>
-            <button type="submit">Submit Order</button>
-          </form>
-        </div>
+            <form className="form" onSubmit={handleSubmitOrder} >
+              <div>
+                <div>
+                  <label>From</label>
+                  <select
+                    name="from"
+                    type="from"
+                    onChange={handleChangeOrder}
+                    required>
+                    <option value="">Select token</option>
+                    <option value="HOGEDIP20">HOGEDIP20</option>
+                    <option value="PIYODIP20">PIYODIP20</option>
+                  </select>
+                </div>
+                <div>
+                  <label>Amount</label>
+                  <input
+                    name="fromAmount"
+                    type="fromAmount"
+                    onChange={handleChangeOrder}
+                    required
+                  />
+                </div>
+                <div>
+                  <span>→</span>
+                </div>
+                <div>
+                  <label>To</label>
+                  <select
+                    name="to"
+                    type="to"
+                    onChange={handleChangeOrder}
+                    required>
+                    <option value="">Select token</option>
+                    <option value="HOGEDIP20">HOGEDIP20</option>
+                    <option value="PIYODIP20">PIYODIP20</option>
+                  </select>
+                </div>
+                <div>
+                  <label>Amount</label>
+                  <input
+                    name="toAmount"
+                    type="toAmount"
+                    onChange={handleChangeOrder}
+                    required
+                  />
+                </div>
+              </div>
+              <button type="submit">Submit Order</button>
+            </form>
+          </div>
+        }
 
         {/* LIST ORDER */}
         <div className="order-list" style={{ backgroundColor: "rgb(8, 2, 38)" }}>
