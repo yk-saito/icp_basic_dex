@@ -10,6 +10,11 @@
     "PiyoDIP20": {
       "main": "src/DIP20/motoko/src/token.mo"
     },
+    "internet_identity": {
+      "type": "custom",
+      "candid": "src/internet_identity/internet_identity.did",
+      "wasm": "src/internet_identity/internet_identity_dev.wasm"
+    },
     "icp_basic_dex_frontend": {
       "dependencies": [
         "icp_basic_dex_backend"

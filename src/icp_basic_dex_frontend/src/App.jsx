@@ -1,7 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import './App.css';
 
+import { Actor, HttpAgent } from "@dfinity/agent";
+import { AuthClient } from "@dfinity/auth-client";
+import { canisterId as DEXCanisterId } from "../../declarations/icp_basic_dex_backend";
+import { idlFactory } from "../../declarations/icp_basic_dex_backend/icp_basic_dex_backend.did.js";
+import { canisterId as IICanisterID } from "../../declarations/internet_identity";
+
 const App = () => {
+
   const [currentPrincipalId, setCurrentPrincipalId] = useState("");
   // TODO: Delete if not used
   const [currentAccountId, setCurrentAccountId] = useState("");
@@ -80,11 +87,75 @@ const App = () => {
     }
   };
 
+  // Login Internet Identity handler
+  const handleLogin = async () => {
+    // Autofills the <input> for the II Url to point to the correct canister.
+    let iiUrl;
+
+    // TODO: Delete
+    // console.log(`NETWORK: ${process.env.DFX_NETWORK}`);
+    // console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
+
+    if (process.env.DFX_NETWORK === "local") {
+      iiUrl = `http://localhost:8080/?canisterId=${IICanisterID}`;
+    } else if (process.env.DFX_NETWORK === "ic") {
+      iiUrl = `https://${IICanisterID}.ic0.app`;
+    } else {
+      iiUrl = `https://${IICanisterID}.dfinity.network`;
+    }
+
+    // TODO: Delete
+    iiUrl = `http://localhost:8080/?canisterId=${IICanisterID}`;
+
+    console.log(`iiUrl: ${iiUrl}`);
+
+    // Start Login process.
+    // First we have to create and AuthClient.
+    const authClient = await AuthClient.create();
+
+    // Login with Internet Identity.
+    await new Promise((resolve, reject) => {
+      authClient.login({
+        identityProvider: iiUrl,
+        onSuccess: resolve,
+        onError: reject,
+      });
+    });
+
+    // Get the identity from the auth client:
+    const identity = authClient.getIdentity();
+    // Using the identity obtained from the auth client, we can create an agent to interact with the IC.
+    const agent = new HttpAgent({ identity });
+    // Using the interface description of our webapp, we create an Actor that we use to call the service methods.
+    const icp_basic_dex = Actor.createActor(idlFactory, {
+      agent,
+      canisterId: DEXCanisterId,
+    });
+    // Call whoami which returns the principal (user id) of the current user.
+    const principal = await icp_basic_dex.whoami();
+
+    console.log(`identity: ${typeof identity}: ${identity}`);
+    console.log(`principal: ${typeof principal}: ${principal}`);
+    console.log(`principal.toText: ${typeof principal.toText()}: ${principal.toText()}`);
+
+    console.log(`JSON.stringify(identity): ${JSON.stringify(identity)}`);
+    console.log(`JSON.stringify(principal): ${JSON.stringify(principal)}`);
+    console.log(`Call whoami: ${authClient.getIdentity().getPrincipal().toText()}`);
+
+    setCurrentPrincipalId(principal.toText());
+  };
+
   return (
     <>
       {/* HEADER */}
       <ul>
         <li>SIMPLE DEX</li>
+        <li style={{ float: 'right' }}>
+          <button
+            onClick={handleLogin}>
+            Login Internet Identity
+          </button>
+        </li>
         <li style={{ float: 'right' }}>
           {!currentPrincipalId && (
             <button
