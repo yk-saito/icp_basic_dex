@@ -17,6 +17,11 @@ actor class Dex() = this {
   // 売り注文を管理するモジュール
   private var exchange = Exchange.Exchange(book);
 
+  // ===== TEST ===== TODO: Delete
+  public query ({ caller }) func whoami() : async Principal {
+    return caller;
+  };
+
   // ===== DEPOSIT / WITHDRAW =====
   public shared (msg) func deposit(token : T.Token) : async T.DepositReceipt {
     Debug.print(
