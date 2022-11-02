@@ -53,6 +53,7 @@ module {
         };
     };
 
+    // TODO: Ref. owner不要なら削除
     public type Balance = {
         owner : Principal;
         token : Principal;
