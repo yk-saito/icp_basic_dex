@@ -3,29 +3,47 @@ import './App.css';
 
 import { Actor, HttpAgent } from "@dfinity/agent";
 import { AuthClient } from "@dfinity/auth-client";
-import { canisterId as DEXCanisterId } from "../../declarations/icp_basic_dex_backend";
-import { idlFactory } from "../../declarations/icp_basic_dex_backend/icp_basic_dex_backend.did.js";
-import { canisterId as IICanisterID } from "../../declarations/internet_identity";
+import { Principal } from '@dfinity/principal';
+
+import { canisterId as IICanisterID }
+  from "../../declarations/internet_identity";
+import { canisterId as DEXCanisterId, icp_basic_dex_backend }
+  from "../../declarations/icp_basic_dex_backend";
+import { idlFactory as DEXidlFactory }
+  from "../../declarations/icp_basic_dex_backend/icp_basic_dex_backend.did.js";
+import { canisterId as HogeDIP20canisterId }
+  from '../../declarations/HogeDIP20';
+import { idlFactory as HogeidlFactory }
+  from '../../declarations/HogeDIP20/HogeDIP20.did.js';
+import { canisterId as PiyoDIP20canisterId }
+  from '../../declarations/PiyoDIP20';
+import { idlFactory as PiyoidlFactory }
+  from '../../declarations/PiyoDIP20/PiyoDIP20.did.js';
 
 const App = () => {
+
+  const tokenCanisters = [
+    {
+      canisterName: 'HogeDIP20',
+      factory: HogeidlFactory,
+      canisterId: HogeDIP20canisterId,
+    },
+    {
+      canisterName: 'PiyoDIP20',
+      factory: PiyoidlFactory,
+      canisterId: PiyoDIP20canisterId,
+    },
+  ];
+
+  const [identity, setIdentity] = useState();
+  const [authClient, setAuthClient] = useState();
+  const [agent, setAgent] = useState();
 
   const [currentPrincipalId, setCurrentPrincipalId] = useState("");
   // TODO: Delete if not used
   const [currentAccountId, setCurrentAccountId] = useState("");
 
-  const [userTokens, setUserTokens] = useState([
-    // TODO: Delete
-    {
-      name: 'HOGE',
-      balance: 100,
-      fee: 5,
-    },
-    {
-      name: 'POYO',
-      balance: 300,
-      fee: 10,
-    },
-  ])
+  const [userTokens, setUserTokens] = useState([])
 
   const [orders, setOrders] = useState([
     // TODO: Delete
@@ -113,6 +131,8 @@ const App = () => {
     // First we have to create and AuthClient.
     const authClient = await AuthClient.create();
 
+    setAuthClient(authClient);
+
     // Login with Internet Identity.
     await new Promise((resolve, reject) => {
       authClient.login({
@@ -124,25 +144,67 @@ const App = () => {
 
     // Get the identity from the auth client:
     const identity = authClient.getIdentity();
-    // Using the identity obtained from the auth client, we can create an agent to interact with the IC.
+    setIdentity(identity);
+    // Using the identity obtained from the auth client,
+    // we can create an agent to interact with the IC.
     const agent = new HttpAgent({ identity });
-    // Using the interface description of our webapp, we create an Actor that we use to call the service methods.
-    const icp_basic_dex = Actor.createActor(idlFactory, {
+    setAgent(agent);
+    // Using the interface description of our webapp,
+    // we create an Actor that we use to call the service methods.
+    const icp_basic_dex = Actor.createActor(DEXidlFactory, {
       agent,
       canisterId: DEXCanisterId,
     });
     // Call whoami which returns the principal (user id) of the current user.
     const principal = await icp_basic_dex.whoami();
 
-    console.log(`identity: ${typeof identity}: ${identity}`);
-    console.log(`principal: ${typeof principal}: ${principal}`);
-    console.log(`principal.toText: ${typeof principal.toText()}: ${principal.toText()}`);
-
-    console.log(`JSON.stringify(identity): ${JSON.stringify(identity)}`);
-    console.log(`JSON.stringify(principal): ${JSON.stringify(principal)}`);
-    console.log(`Call whoami: ${authClient.getIdentity().getPrincipal().toText()}`);
-
     setCurrentPrincipalId(principal.toText());
+
+    // Get information about the tokens held by the Logged-in user.
+    for (let i = 0; i < tokenCanisters.length; ++i) {
+      const tokenActor = Actor.createActor(tokenCanisters[i].factory, {
+        agent,
+        canisterId: tokenCanisters[i].canisterId,
+      });
+
+      // Get metadata of token.
+      const metadata = await tokenActor.getMetadata();
+      // Get token held by user.
+      const balance = await tokenActor.balanceOf(principal);
+
+      // Get token balances deposited by the user in the DEX.
+      /** 
+       * dexBalances = {
+       *  owner: Principal,
+       *  token: Principal,
+       *  amount : token Balance
+      */
+      const dexBalances = await icp_basic_dex_backend.getBalances();
+      let balanceAmount = 0;
+      for (let i = 0; i < dexBalances.length; ++i) {
+        if (dexBalances[i].token === canisterId) {
+          console.log("Found DEX balance!!!"); // TODO: Delete
+          balanceAmount = dexBalances[i].amount;
+          break;
+        }
+      };
+
+      console.log(
+        `symbol: ${metadata.symbol},
+         balance: ${balance},
+         dexBalance: ${balanceAmount},
+         fee: ${metadata.fee}`
+      ); // TODO: Delete
+
+      // Set information of user.
+      const userToken = {
+        symbol: metadata.symbol.toString(),
+        balance: balance.toString(),
+        dexBalance: balanceAmount,
+        fee: metadata.fee.toString(),
+      }
+      setUserTokens((userTokens) => [...userTokens, userToken]);
+    }
   };
 
   return (
@@ -195,14 +257,16 @@ const App = () => {
                 <tr>
                   <th>Token</th>
                   <th>Balance</th>
+                  <th>DEX Balance</th>
                   <th>Fee</th>
                   <th>Action</th>
                 </tr>
-                {userTokens.map((token) => {
+                {userTokens.map((token, index) => {
                   return (
-                    <tr key={token.name}>
-                      <td data-th="Token">{token.name}</td>
+                    <tr key={`${index} : ${token.symbol}`}>
+                      <td data-th="Token">{token.symbol}</td>
                       <td data-th="Balance">{token.balance}</td>
+                      <td data-th="DEX Balance">{token.dexBalance}</td>
                       <td data-th="Fee">{token.fee}</td>
                       <td data-th="Action">
                         <div className="btn-token">
@@ -294,7 +358,7 @@ const App = () => {
               </tr>
               {orders.map((order, index) => {
                 return (
-                  <tr key={`${order.token} ${index}`} >
+                  <tr key={`${index}: ${order.token}`} >
                     <td data-th="From">{order.from}</td>
                     <td data-th="Amount">{order.fromAmount}</td>
                     <td>→</td>
