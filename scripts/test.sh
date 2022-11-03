@@ -65,6 +65,8 @@ dfx canister call icp_basic_dex_backend deposit '(principal '\"$HogeDIP20_PRINCI
 # user1がDEXに預けたトークンのデータを確認
 echo -e '\n===== getBalances() ====='
 dfx canister call icp_basic_dex_backend getBalances
+echo -e '\n===== getBalance() ====='
+dfx canister call icp_basic_dex_backend getBalance '(principal '\"$HogeDIP20_PRINCIPAL\"')'
 
 
 echo -e '\n===== TEST DEPOSIT (user2 -> DEX) ====='
@@ -77,6 +79,8 @@ dfx canister call PiyoDIP20 approve '(principal '\"$DEX_PRINCIPAL\"', 10000)'
 echo -e '\n===== deposit() ====='
 dfx canister call icp_basic_dex_backend deposit '(principal '\"$PiyoDIP20_PRINCIPAL\"')'
 ## (variant { Ok = 100_000 : nat })
+dfx canister call icp_basic_dex_backend getBalance '(principal '\"$PiyoDIP20_PRINCIPAL\"')'
+
 
 # # user1の残高チェック
 # dfx canister call HogeDIP20 balanceOf '(principal '\"$USER2_PRINCIPAL\"')'

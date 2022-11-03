@@ -218,4 +218,22 @@ actor class Dex() = this {
       };
     };
   };
+
+  public shared query (msg) func getBalance(token : T.Token) : async Nat {
+    switch (book.get(msg.caller)) {
+      case (?token_balances) {
+        switch (token_balances.get(token)) {
+          case (?amount) {
+            return (amount);
+          };
+          case (null) {
+            return (0);
+          };
+        };
+      };
+      case (null) {
+        return 0;
+      };
+    };
+  };
 };
