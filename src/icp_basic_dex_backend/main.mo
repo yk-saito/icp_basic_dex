@@ -61,12 +61,13 @@ actor class Dex() = this {
     return #Ok(balance - dip_fee);
   };
 
-  public shared (msg) func withdraw(token : T.Token, amount : Nat, address : Principal) : async T.WithdrawReceipt {
+  public shared (msg) func withdraw(token : T.Token, amount : Nat /*, address : Principal*/) : async T.WithdrawReceipt {
     // キャニスターIDをDIP20Interfaceにキャスト
     let dip20 = actor (Principal.toText(token)) : T.DIPInterface;
 
     // ユーザーへトークンを送る
-    let txReceipt = await dip20.transfer(address, amount);
+    // let txReceipt = await dip20.transfer(address, amount);
+    let txReceipt = await dip20.transfer(msg.caller, amount);
 
     switch txReceipt {
       case (#Err e) {

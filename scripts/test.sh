@@ -137,7 +137,9 @@ echo -e '#------ get order ------'
 dfx canister call icp_basic_dex_backend getOrders
 
 echo -e '#------ withdraw & delete order ------'
-dfx canister call icp_basic_dex_backend withdraw '(principal '\"$HogeDIP20_PRINCIPAL\"', 5000, principal '\"$USER1_PRINCIPAL\"')'
+# dfx canister call icp_basic_dex_backend withdraw '(principal '\"$HogeDIP20_PRINCIPAL\"', 5000, principal '\"$USER1_PRINCIPAL\"')'
+dfx canister call icp_basic_dex_backend withdraw '(principal '\"$HogeDIP20_PRINCIPAL\"', 5000)'
+
 echo -e '#------ get order ------'
 dfx canister call icp_basic_dex_backend getOrders
 
