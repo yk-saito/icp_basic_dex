@@ -45,20 +45,7 @@ const App = () => {
 
   const [userTokens, setUserTokens] = useState([])
 
-  const [orders, setOrders] = useState([
-    // TODO: Delete
-    {
-      from: 'HOGE',
-      fromAmount: 200,
-      to: 'PIYO',
-      toAmount: 300,
-    },
-    {
-      from: 'PIYO',
-      fromAmount: 400,
-      to: 'HOGE',
-      toAmount: 300,
-    },]);
+  const [orders, setOrders] = useState([]);
 
   const [order, setOrder] = useState({
     from: '',
@@ -76,13 +63,68 @@ const App = () => {
     });
   };
 
-  const handleSubmitOrder = (event) => {
+  const handleSubmitOrder = async (event) => {
     event.preventDefault();
     console.log(order);
 
-    const newOrders = [...orders, order];
-    setOrders(newOrders);
-  }
+    // TODO: creatActorでDEXのアクターを作成、placeOrderを呼び出す
+    const DEXActor = Actor.createActor(DEXidlFactory, {
+      agent,
+      canisterId: DEXCanisterId,
+    });
+
+    let fromPrincipal;
+    if (order.from === "THG") {
+      fromPrincipal = Principal.fromText(HogeDIP20canisterId);
+    } else {
+      fromPrincipal = Principal.fromText(PiyoDIP20canisterId);
+    }
+
+    let toPrincipal;
+    if (order.to === "THG") {
+      toPrincipal = Principal.fromText(HogeDIP20canisterId);
+    } else {
+      toPrincipal = Principal.fromText(PiyoDIP20canisterId);
+    }
+
+    try {
+      const placeOrderResult
+        = await DEXActor.placeOrder(
+          fromPrincipal,
+          Number(order.fromAmount),
+          toPrincipal,
+          Number(order.toAmount),
+        );
+      // console.log(`placeOrderResult: ${JSON.stringify(placeOrderResult.Ok)}`);
+      // console.log(`placeOrderResult: ${JSON.stringify(placeOrderResult.Err)}`);
+      // console.log(`placeOrderResult: ${placeOrderResult.Ok}`);
+      // console.log(`placeOrderResult: ${placeOrderResult.Err}`);
+
+      // Return #Err
+      if (Object.keys(placeOrderResult.Err)[0] === "OrderBookFull") {
+        alert("Sell orders have already been placed.");
+        return;
+      }
+
+      // Result #Err
+      if (Object.keys(placeOrderResult.Err)[0] === "InvalidOrder") {
+        alert("Not enough balance.");
+        return;
+      }
+
+      const updateOrders = await DEXActor.getOrders();
+      // TODO: ユーザーボードの残高更新
+
+      // TODO: 更新されたオーダーブックを取得して、データをセット
+      setOrders(updateOrders);
+    } catch (error) {
+      // TODO: placeOrderのエラー結果でアラート
+      // OrderBookFull(既にトークンでオーダーが出されているとき)
+
+      // InvalidOrder（残高不足）
+      console.log(`handleSubmitOrder: ${error} `);
+    }
+  };
 
   // Connect Wallet handler
   const handleConnectWallet = async () => {
@@ -190,6 +232,14 @@ const App = () => {
       }
       setUserTokens((userTokens) => [...userTokens, userToken]);
     }
+
+    // Set Order list
+    const orders = await DEXActor.getOrders();
+
+    console.log(`1. orders: ${orders}`);
+    console.dir(`2. orders: ${orders}`);
+
+    setOrders(orders);
   };
 
   const handleDeposit = async (updateIndex) => {
@@ -376,15 +426,15 @@ const App = () => {
                     onChange={handleChangeOrder}
                     required>
                     <option value="">Select token</option>
-                    <option value="HOGEDIP20">HOGEDIP20</option>
-                    <option value="PIYODIP20">PIYODIP20</option>
+                    <option value="THG">THG</option>
+                    <option value="TPY">TPY</option>
                   </select>
                 </div>
                 <div>
                   <label>Amount</label>
                   <input
                     name="fromAmount"
-                    type="fromAmount"
+                    type="number"
                     onChange={handleChangeOrder}
                     required
                   />
@@ -400,15 +450,15 @@ const App = () => {
                     onChange={handleChangeOrder}
                     required>
                     <option value="">Select token</option>
-                    <option value="HOGEDIP20">HOGEDIP20</option>
-                    <option value="PIYODIP20">PIYODIP20</option>
+                    <option value="THG">THG</option>
+                    <option value="TPY">TPY</option>
                   </select>
                 </div>
                 <div>
                   <label>Amount</label>
                   <input
                     name="toAmount"
-                    type="toAmount"
+                    type="number"
                     onChange={handleChangeOrder}
                     required
                   />
@@ -435,11 +485,11 @@ const App = () => {
               {orders.map((order, index) => {
                 return (
                   <tr key={`${index}: ${order.token} `} >
-                    <td data-th="From">{order.from}</td>
-                    <td data-th="Amount">{order.fromAmount}</td>
+                    <td data-th="From">{order.from.toString()}</td>
+                    <td data-th="Amount">{order.fromAmount.toString()}</td>
                     <td>→</td>
-                    <td data-th="To">{order.to}</td>
-                    <td data-th="Amount">{order.toAmount}</td>
+                    <td data-th="To">{order.to.toString()}</td>
+                    <td data-th="Amount">{order.toAmount.toString()}</td>
                     <td data-th="Action">
                       <div>
                         <button className="btn-buy">Buy</button>
