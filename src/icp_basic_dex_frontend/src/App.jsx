@@ -88,7 +88,7 @@ const App = () => {
     }
 
     try {
-      const placeOrderResult
+      const resultPlace
         = await DEXActor.placeOrder(
           fromPrincipal,
           Number(order.fromAmount),
@@ -96,8 +96,8 @@ const App = () => {
           Number(order.toAmount),
         );
       // Check Error
-      if (!placeOrderResult.Ok) {
-        alert(`Error: ${Object.keys(placeOrderResult.Err)[0]}`);
+      if (!resultPlace.Ok) {
+        alert(`Error: ${Object.keys(resultPlace.Err)[0]}`);
         return;
       }
       const updateOrders = await DEXActor.getOrders();
@@ -105,7 +105,7 @@ const App = () => {
       // Update Order List
       setOrders(updateOrders);
 
-      console.log(`Created order ID: ${Object.keys(placeOrderResult.Ok)[0]}`);
+      console.log(`Created order ID: ${Object.keys(resultPlace.Ok)[0]}`);
     } catch (error) {
       console.log(`handleSubmitOrder: ${error} `);
     }
@@ -125,7 +125,7 @@ const App = () => {
 
       // Check Error
       if (!resultCancel.Ok) {
-        alert(`Error: ${Object.keys(placeOrderResult.Err)}`);
+        alert(`Error: ${Object.keys(resultPlace.Err)}`);
         return;
       }
 
@@ -268,13 +268,13 @@ const App = () => {
 
     try {
       // Approve user token transfer by DEX.
-      const approveResult
+      const resultApprove
         = await tokenActor.approve(Principal.fromText(DEXCanisterId), 5000);
-      console.log(`approveResult: ${approveResult.Ok}`);
+      console.log(`resultApprove: ${resultApprove.Ok}`);
       // Deposit token from token canister to DEX.
-      const depositResult
+      const resultDeposit
         = await DEXActor.deposit(Principal.fromText(tokenCanisters[updateIndex].canisterId));
-      console.log(`depositResult: ${depositResult.Ok}`);
+      console.log(`resultDeposit: ${resultDeposit.Ok}`);
       // Get updated balance of token Canister.
       const balance
         = await tokenActor.balanceOf(Principal.fromText(currentPrincipalId));
@@ -310,9 +310,9 @@ const App = () => {
     });
 
     try {
-      const withdrawResult
+      const resultWithdraw
         = await DEXActor.withdraw(Principal.fromText(tokenCanisters[updateIndex].canisterId), 5000);
-      console.log(`withdrawResult: ${withdrawResult.Ok}`);
+      console.log(`resultWithdraw: ${resultWithdraw.Ok}`);
       // Get updated balance of token Canister.
       const balance
         = await tokenActor.balanceOf(Principal.fromText(currentPrincipalId));
