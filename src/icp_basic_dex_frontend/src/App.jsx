@@ -45,7 +45,7 @@ const App = () => {
 
   const [userTokens, setUserTokens] = useState([])
 
-  const [orders, setOrders] = useState([]);
+  const [orderList, setOrderList] = useState([]);
 
   const [order, setOrder] = useState({
     from: '',
@@ -103,7 +103,7 @@ const App = () => {
       const updateOrders = await DEXActor.getOrders();
 
       // Update Order List
-      setOrders(updateOrders);
+      setOrderList(updateOrders);
 
       console.log(`Created order ID: ${Object.keys(resultPlace.Ok)[0]}`);
     } catch (error) {
@@ -131,7 +131,7 @@ const App = () => {
 
       // Update orderbook
       const updateOrders = await DEXActor.getOrders();
-      setOrders(updateOrders);
+      setOrderList(updateOrders);
 
       console.log(`Canceled order ID: ${resultCancel.Ok}`);
     } catch (error) {
@@ -249,10 +249,10 @@ const App = () => {
     // Set Order list
     const orders = await DEXActor.getOrders();
 
-    console.log(`1. orders: ${orders}`);
-    console.dir(`2. orders: ${orders}`);
+    console.log(`1. orderList: ${orders}`);
+    console.dir(`2. orderList: ${orders}`);
 
-    setOrders(orders);
+    setOrderList(orders);
   };
 
   const handleDeposit = async (updateIndex) => {
@@ -495,7 +495,7 @@ const App = () => {
                 <th>Amount</th>
                 <th>Action</th>
               </tr>
-              {orders.map((order, index) => {
+              {orderList.map((order, index) => {
                 return (
                   <tr key={`${index}: ${order.token} `} >
                     <td data-th="From">{order.from.toString()}</td>
