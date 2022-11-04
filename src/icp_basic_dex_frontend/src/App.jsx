@@ -100,12 +100,12 @@ const App = () => {
         alert(`Error: ${Object.keys(resultPlace.Err)[0]}`);
         return;
       }
-      const updateOrders = await DEXActor.getOrders();
 
       // Update Order List
+      const updateOrders = await DEXActor.getOrders();
       setOrderList(updateOrders);
 
-      console.log(`Created order ID: ${Object.keys(resultPlace.Ok)[0]}`);
+      console.log(`Creted order:  ${resultPlace.Ok[0].id}`);
     } catch (error) {
       console.log(`handleSubmitOrder: ${error} `);
     }
