@@ -148,15 +148,19 @@ const App = () => {
     // Using the identity obtained from the auth client,
     // we can create an agent to interact with the IC.
     const agent = new HttpAgent({ identity });
+    // TODO: Must comment out later!!!
+    // if (process.env.DFX_NETWORK === "local") {
+    agent.fetchRootKey();
+    // }
     setAgent(agent);
     // Using the interface description of our webapp,
     // we create an Actor that we use to call the service methods.
-    const icp_basic_dex = Actor.createActor(DEXidlFactory, {
+    const DEXActor = Actor.createActor(DEXidlFactory, {
       agent,
       canisterId: DEXCanisterId,
     });
     // Call whoami which returns the principal (user id) of the current user.
-    const principal = await icp_basic_dex.whoami();
+    const principal = await DEXActor.whoami();
 
     setCurrentPrincipalId(principal.toText());
 
@@ -172,38 +176,100 @@ const App = () => {
       // Get token held by user.
       const balance = await tokenActor.balanceOf(principal);
 
-      // Get token balances deposited by the user in the DEX.
-      /** 
-       * dexBalances = {
-       *  owner: Principal,
-       *  token: Principal,
-       *  amount : token Balance
-      */
-      const dexBalances = await icp_basic_dex_backend.getBalances();
-      let balanceAmount = 0;
-      for (let i = 0; i < dexBalances.length; ++i) {
-        if (dexBalances[i].token === canisterId) {
-          console.log("Found DEX balance!!!"); // TODO: Delete
-          balanceAmount = dexBalances[i].amount;
-          break;
-        }
-      };
-
-      console.log(
-        `symbol: ${metadata.symbol},
-         balance: ${balance},
-         dexBalance: ${balanceAmount},
-         fee: ${metadata.fee}`
-      ); // TODO: Delete
+      // Get token balance deposited by the user in the DEX.
+      const dexBalance
+        = await DEXActor.getBalance(Principal.fromText(tokenCanisters[i].canisterId));
+      console.log(`dexBalance: ${dexBalance}`);
 
       // Set information of user.
       const userToken = {
         symbol: metadata.symbol.toString(),
         balance: balance.toString(),
-        dexBalance: balanceAmount,
+        dexBalance: dexBalance.toString(),
         fee: metadata.fee.toString(),
       }
       setUserTokens((userTokens) => [...userTokens, userToken]);
+    }
+  };
+
+  const handleDeposit = async (updateIndex) => {
+    const tokenActor = Actor.createActor(tokenCanisters[updateIndex].factory, {
+      agent,
+      canisterId: tokenCanisters[updateIndex].canisterId,
+    });
+
+    const DEXActor = Actor.createActor(DEXidlFactory, {
+      agent,
+      canisterId: DEXCanisterId,
+    });
+
+    try {
+      // Approve user token transfer by DEX.
+      const approveResult
+        = await tokenActor.approve(Principal.fromText(DEXCanisterId), 5000);
+      console.log(`approveResult: ${approveResult.Ok}`);
+      // Deposit token from token canister to DEX.
+      const depositResult
+        = await DEXActor.deposit(Principal.fromText(tokenCanisters[updateIndex].canisterId));
+      console.log(`depositResult: ${depositResult.Ok}`);
+      // Get updated balance of token Canister.
+      const balance
+        = await tokenActor.balanceOf(Principal.fromText(currentPrincipalId));
+      // Get updated balance in DEX.
+      const dexBalance
+        = await DEXActor.getBalance(Principal.fromText(tokenCanisters[updateIndex].canisterId));
+
+      // Set new user infomation.
+      setUserTokens(
+        userTokens.map((userToken, index) => (
+          index === updateIndex ? {
+            symbol: userToken.symbol,
+            balance: balance.toString(),
+            dexBalance: dexBalance.toString(),
+            fee: userToken.fee,
+          } : userToken))
+      );
+
+    } catch (error) {
+      console.log(`handleDeposit: ${error} `);
+    }
+  };
+
+  const handleWithdraw = async (updateIndex) => {
+    const tokenActor = Actor.createActor(tokenCanisters[updateIndex].factory, {
+      agent,
+      canisterId: tokenCanisters[updateIndex].canisterId,
+    });
+
+    const DEXActor = Actor.createActor(DEXidlFactory, {
+      agent,
+      canisterId: DEXCanisterId,
+    });
+
+    try {
+      const withdrawResult
+        = await DEXActor.withdraw(Principal.fromText(tokenCanisters[updateIndex].canisterId), 5000);
+      console.log(`withdrawResult: ${withdrawResult.Ok}`);
+      // Get updated balance of token Canister.
+      const balance
+        = await tokenActor.balanceOf(Principal.fromText(currentPrincipalId));
+      // Get updated balance in DEX.
+      const dexBalance
+        = await DEXActor.getBalance(Principal.fromText(tokenCanisters[updateIndex].canisterId));
+
+      // Set new user infomation.
+      setUserTokens(
+        userTokens.map((userToken, index) => (
+          index === updateIndex ? {
+            symbol: userToken.symbol,
+            balance: balance.toString(),
+            dexBalance: dexBalance.toString(),
+            fee: userToken.fee,
+          } : userToken))
+      );
+
+    } catch (error) {
+      console.log(`handleDeposit: ${error} `);
     }
   };
 
@@ -263,15 +329,25 @@ const App = () => {
                 </tr>
                 {userTokens.map((token, index) => {
                   return (
-                    <tr key={`${index} : ${token.symbol}`}>
+                    <tr key={`${index} : ${token.symbol} `}>
                       <td data-th="Token">{token.symbol}</td>
                       <td data-th="Balance">{token.balance}</td>
                       <td data-th="DEX Balance">{token.dexBalance}</td>
                       <td data-th="Fee">{token.fee}</td>
                       <td data-th="Action">
                         <div className="btn-token">
-                          <button className='btn-deposit'>Deposit</button>
-                          <button className='btn-withdraw'>Withdraw</button>
+                          <button
+                            className='btn-deposit'
+                            onClick={() => handleDeposit(index)}
+                          >
+                            Deposit
+                          </button>
+                          <button
+                            className='btn-withdraw'
+                            onClick={() => handleWithdraw(index)}
+                          >
+                            Withdraw
+                          </button>
                           <button className='btn-faucet'>Faucet</button>
                         </div>
                       </td>
@@ -358,7 +434,7 @@ const App = () => {
               </tr>
               {orders.map((order, index) => {
                 return (
-                  <tr key={`${index}: ${order.token}`} >
+                  <tr key={`${index}: ${order.token} `} >
                     <td data-th="From">{order.from}</td>
                     <td data-th="Amount">{order.fromAmount}</td>
                     <td>→</td>
