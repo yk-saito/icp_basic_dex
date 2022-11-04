@@ -126,6 +126,37 @@ const App = () => {
     }
   };
 
+  // Cancel order handler
+  const handleCancelOrder = async (id) => {
+    try {
+      alert("Call handleCancelOrder");
+      const DEXActor = Actor.createActor(DEXidlFactory, {
+        agent,
+        canisterId: DEXCanisterId,
+      });
+
+      // Call cancelOrder
+      const resultCancel = await DEXActor.cancelOrder(id);
+
+      if (resultCancel.Ok) { // TODO: Delete(エラー処理だけ残す)
+        console.log(`resultCancel.Ok: ${resultCancel.Ok}`);
+
+      } else {
+        console.log(`resultCancel.Err: ${resultCancel.Err}`);
+        alert(`${Object.keys(resultCancel.Err)[0]}`);
+        return;
+      }
+
+      // Update orderbook
+      const updateOrders = await DEXActor.getOrders();
+      setOrders(updateOrders);
+
+      // TODO: ユーザーボードの残高更新
+    } catch (error) {
+      console.log(`handleCancelOrder: ${error}`);
+    }
+  }
+
   // Connect Wallet handler
   const handleConnectWallet = async () => {
     if (currentPrincipalId) {
@@ -493,7 +524,10 @@ const App = () => {
                     <td data-th="Action">
                       <div>
                         <button className="btn-buy">Buy</button>
-                        <button className="btn-cancel">Cancel</button>
+                        <button
+                          className="btn-cancel"
+                          onClick={() => handleCancelOrder(order.id)}
+                        >Cancel</button>
                       </div>
                     </td>
                   </tr>
