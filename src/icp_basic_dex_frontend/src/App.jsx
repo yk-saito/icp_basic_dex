@@ -123,12 +123,9 @@ const App = () => {
       // Call cancelOrder
       const resultCancel = await DEXActor.cancelOrder(id);
 
-      if (resultCancel.Ok) { // TODO: Delete(エラー処理だけ残す)
-        console.log(`resultCancel.Ok: ${resultCancel.Ok}`);
-
-      } else {
-        console.log(`resultCancel.Err: ${resultCancel.Err}`);
-        alert(`${Object.keys(resultCancel.Err)[0]}`);
+      // Check Error
+      if (!resultCancel.Ok) {
+        alert(`Error: ${Object.keys(placeOrderResult.Err)}`);
         return;
       }
 
@@ -136,7 +133,7 @@ const App = () => {
       const updateOrders = await DEXActor.getOrders();
       setOrders(updateOrders);
 
-      // TODO: ユーザーボードの残高更新
+      console.log(`Canceled order ID: ${resultCancel.Ok}`);
     } catch (error) {
       console.log(`handleCancelOrder: ${error}`);
     }
