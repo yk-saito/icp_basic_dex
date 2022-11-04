@@ -235,8 +235,42 @@ const App = () => {
     }
   };
 
-  const handleWithdraw = () => {
-    alert('click handleWithdraw');
+  const handleWithdraw = async (updateIndex) => {
+    const tokenActor = Actor.createActor(tokenCanisters[updateIndex].factory, {
+      agent,
+      canisterId: tokenCanisters[updateIndex].canisterId,
+    });
+
+    const DEXActor = Actor.createActor(DEXidlFactory, {
+      agent,
+      canisterId: DEXCanisterId,
+    });
+
+    try {
+      const withdrawResult
+        = await DEXActor.withdraw(Principal.fromText(tokenCanisters[updateIndex].canisterId), 5000);
+      console.log(`withdrawResult: ${withdrawResult.Ok}`);
+      // Get updated balance of token Canister.
+      const balance
+        = await tokenActor.balanceOf(Principal.fromText(currentPrincipalId));
+      // Get updated balance in DEX.
+      const dexBalance
+        = await DEXActor.getBalance(Principal.fromText(tokenCanisters[updateIndex].canisterId));
+
+      // Set new user infomation.
+      setUserTokens(
+        userTokens.map((userToken, index) => (
+          index === updateIndex ? {
+            symbol: userToken.symbol,
+            balance: balance.toString(),
+            dexBalance: dexBalance.toString(),
+            fee: userToken.fee,
+          } : userToken))
+      );
+
+    } catch (error) {
+      console.log(`handleDeposit: ${error} `);
+    }
   };
 
   return (
@@ -310,7 +344,7 @@ const App = () => {
                           </button>
                           <button
                             className='btn-withdraw'
-                            onClick={handleWithdraw}
+                            onClick={() => handleWithdraw(index)}
                           >
                             Withdraw
                           </button>
