@@ -95,33 +95,18 @@ const App = () => {
           toPrincipal,
           Number(order.toAmount),
         );
-      // console.log(`placeOrderResult: ${JSON.stringify(placeOrderResult.Ok)}`);
-      // console.log(`placeOrderResult: ${JSON.stringify(placeOrderResult.Err)}`);
-      // console.log(`placeOrderResult: ${placeOrderResult.Ok}`);
-      // console.log(`placeOrderResult: ${placeOrderResult.Err}`);
-
-      // Return #Err
-      if (Object.keys(placeOrderResult.Err)[0] === "OrderBookFull") {
-        alert("Sell orders have already been placed.");
+      // Check Error
+      if (!placeOrderResult.Ok) {
+        alert(`Error: ${Object.keys(placeOrderResult.Err)[0]}`);
         return;
       }
-
-      // Result #Err
-      if (Object.keys(placeOrderResult.Err)[0] === "InvalidOrder") {
-        alert("Not enough balance.");
-        return;
-      }
-
       const updateOrders = await DEXActor.getOrders();
-      // TODO: ユーザーボードの残高更新
 
-      // TODO: 更新されたオーダーブックを取得して、データをセット
+      // Update Order List
       setOrders(updateOrders);
-    } catch (error) {
-      // TODO: placeOrderのエラー結果でアラート
-      // OrderBookFull(既にトークンでオーダーが出されているとき)
 
-      // InvalidOrder（残高不足）
+      console.log(`Created order ID: ${Object.keys(placeOrderResult.Ok)[0]}`);
+    } catch (error) {
       console.log(`handleSubmitOrder: ${error} `);
     }
   };
