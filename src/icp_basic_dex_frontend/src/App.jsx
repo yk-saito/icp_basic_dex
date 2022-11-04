@@ -105,7 +105,7 @@ const App = () => {
       const updateOrders = await DEXActor.getOrders();
       setOrderList(updateOrders);
 
-      console.log(`Creted order:  ${resultPlace.Ok[0].id}`);
+      console.log(`Created order:  ${resultPlace.Ok[0].id}`);
     } catch (error) {
       console.log(`handleSubmitOrder: ${error} `);
     }
@@ -505,7 +505,10 @@ const App = () => {
                     <td data-th="Amount">{order.toAmount.toString()}</td>
                     <td data-th="Action">
                       <div>
-                        <button className="btn-buy">Buy</button>
+                        <button
+                          className="btn-buy"
+                          onClick={() => handleBuyOrder(order.id)}
+                        >Buy</button>
                         <button
                           className="btn-cancel"
                           onClick={() => handleCancelOrder(order.id)}
