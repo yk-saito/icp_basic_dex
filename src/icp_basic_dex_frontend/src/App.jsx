@@ -111,6 +111,43 @@ const App = () => {
     }
   };
 
+  // Buy order hander
+  const handleBuyOrder = async (order) => {
+    // Create DEX actor
+    const DEXActor = Actor.createActor(DEXidlFactory, {
+      agent,
+      canisterId: DEXCanisterId,
+    });
+    try {
+
+      // Call placeOrder
+      const resultPlace
+        = await DEXActor.placeOrder(
+          order.to,
+          Number(order.toAmount),
+          order.from,
+          Number(order.fromAmount),
+        );
+
+      // Check Error
+      if (!resultPlace.Ok) {
+        alert(`Error: ${Object.keys(resultPlace.Err)[0]}`);
+        return;
+      }
+
+      // Update Order List
+      const updateOrders = await DEXActor.getOrders();
+      setOrderList(updateOrders);
+
+      // TODO: Update user balances
+
+      console.log("Trade Successful!");
+    } catch (error) {
+      console.log(`handleBuyOrder: ${error} `);
+    };
+  };
+
+
   // Cancel order handler
   const handleCancelOrder = async (id) => {
     try {
@@ -507,7 +544,7 @@ const App = () => {
                       <div>
                         <button
                           className="btn-buy"
-                          onClick={() => handleBuyOrder(order.id)}
+                          onClick={() => handleBuyOrder(order)}
                         >Buy</button>
                         <button
                           className="btn-cancel"
@@ -524,6 +561,6 @@ const App = () => {
       </main>
     </>
   )
-}
+};
 
 export default App;
