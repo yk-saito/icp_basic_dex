@@ -151,7 +151,6 @@ const App = () => {
   // Cancel order handler
   const handleCancelOrder = async (id) => {
     try {
-      alert("Call handleCancelOrder");
       const DEXActor = Actor.createActor(DEXidlFactory, {
         agent,
         canisterId: DEXCanisterId,
@@ -162,7 +161,7 @@ const App = () => {
 
       // Check Error
       if (!resultCancel.Ok) {
-        alert(`Error: ${Object.keys(resultPlace.Err)}`);
+        alert(`Error: ${Object.keys(resultCancel.Err)}`);
         return;
       }
 
