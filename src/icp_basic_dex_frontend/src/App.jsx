@@ -253,28 +253,29 @@ const App = () => {
       });
     });
 
+
     // Get the identity from the auth client:
     const identity = authClient.getIdentity();
     // Using the identity obtained from the auth client,
     // we can create an agent to interact with the IC.
-    const createAgent = new HttpAgent({ identity });
+    const newAgent = new HttpAgent({ identity });
     // TODO: Must comment out later!!!
     // if (process.env.DFX_NETWORK === "local") {
-    createAgent.fetchRootKey();
+    newAgent.fetchRootKey();
     // }
-    setAgent(createAgent);
+    setAgent(newAgent);
     // Using the interface description of our webapp,
     // we create an Actor that we use to call the service methods.
     const DEXActor = Actor.createActor(DEXidlFactory, {
-      agent,
+      newAgent,
       canisterId: DEXCanisterId,
     });
     const principal = await authClient.getIdentity().getPrincipal();
 
     // Get information about the tokens held by the Logged-in user.
-    getUserTokens(agent, principal);
+    getUserTokens(newAgent, principal);
     // Set Order list
-    getOrders(agent);
+    getOrders(newAgent);
 
     setCurrentPrincipalId(principal.toText());
   };
@@ -372,15 +373,15 @@ const App = () => {
         // Using the identity obtained from the auth client,
         // we can create an agent to interact with the IC.
         const identity = authClient.getIdentity();
-        const createAgent = new HttpAgent({ identity });
+        const newAgent = new HttpAgent({ identity });
         // TODO: Must comment out later!!!
         // if (process.env.DFX_NETWORK === "local") {
-        createAgent.fetchRootKey();
+        newAgent.fetchRootKey();
         // }
 
-        getUserTokens(createAgent, principal);
-        getOrders(createAgent);
-        setAgent(createAgent);
+        getUserTokens(newAgent, principal);
+        getOrders(newAgent);
+        setAgent(newAgent);
       } else {
         console.log(`isAuthenticated: ${resultAuthenticated}`);
       }
