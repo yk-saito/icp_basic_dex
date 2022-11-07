@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './App.css';
 
 import { Actor, HttpAgent } from "@dfinity/agent";
@@ -130,11 +130,12 @@ const App = () => {
         return;
       }
 
-      // Update Order List
+      // Update order list
       const updateOrders = await DEXActor.getOrders();
       setOrderList(updateOrders);
 
-      // TODO: Update user balances
+      // Update user balances
+      getUserTokens(agent, Principal.fromText(currentPrincipalId));
 
       console.log("Trade Successful!");
     } catch (error) {
@@ -170,65 +171,13 @@ const App = () => {
     }
   }
 
-  // Login Internet Identity handler
-  const handleLogin = async () => {
-    // Autofills the <input> for the II Url to point to the correct canister.
-    let iiUrl;
-
-    // TODO: Delete
-    // console.log(`NETWORK: ${process.env.DFX_NETWORK}`);
-    // console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
-
-    if (process.env.DFX_NETWORK === "local") {
-      iiUrl = `http://localhost:8080/?canisterId=${IICanisterID}`;
-    } else if (process.env.DFX_NETWORK === "ic") {
-      iiUrl = `https://${IICanisterID}.ic0.app`;
-    } else {
-      iiUrl = `https://${IICanisterID}.dfinity.network`;
-    }
-
-    // TODO: Delete
-    iiUrl = `http://localhost:8080/?canisterId=${IICanisterID}`;
-
-    console.log(`iiUrl: ${iiUrl}`);
-
-    // Start Login process.
-    // First we have to create and AuthClient.
-    const authClient = await AuthClient.create();
-
-    setAuthClient(authClient);
-
-    // Login with Internet Identity.
-    await new Promise((resolve, reject) => {
-      authClient.login({
-        identityProvider: iiUrl,
-        onSuccess: resolve,
-        onError: reject,
-      });
-    });
-
-    // Get the identity from the auth client:
-    const identity = authClient.getIdentity();
-    setIdentity(identity);
-    // Using the identity obtained from the auth client,
-    // we can create an agent to interact with the IC.
-    const agent = new HttpAgent({ identity });
-    // TODO: Must comment out later!!!
-    // if (process.env.DFX_NETWORK === "local") {
-    agent.fetchRootKey();
-    // }
-    setAgent(agent);
-    // Using the interface description of our webapp,
-    // we create an Actor that we use to call the service methods.
+  const getUserTokens = async (agent, principal) => {
     const DEXActor = Actor.createActor(DEXidlFactory, {
       agent,
       canisterId: DEXCanisterId,
     });
-    // Call whoami which returns the principal (user id) of the current user.
-    const principal = await DEXActor.whoami();
 
-    setCurrentPrincipalId(principal.toText());
-
+    let tokens = [];
     // Get information about the tokens held by the Logged-in user.
     for (let i = 0; i < tokenCanisters.length; ++i) {
       const tokenActor = Actor.createActor(tokenCanisters[i].factory, {
@@ -253,12 +202,82 @@ const App = () => {
         dexBalance: dexBalance.toString(),
         fee: metadata.fee.toString(),
       }
-      setUserTokens((userTokens) => [...userTokens, userToken]);
+      tokens.push(userToken);
     }
+    setUserTokens(tokens);
+  }
+
+  const getOrders = async (agent) => {
+    const DEXActor = Actor.createActor(DEXidlFactory, {
+      agent,
+      canisterId: DEXCanisterId,
+    });
 
     // Set Order list
     const orders = await DEXActor.getOrders();
     setOrderList(orders);
+  }
+
+  // Login Internet Identity handler
+  const handleLogin = async () => {
+    // Autofills the <input> for the II Url to point to the correct canister.
+    let iiUrl;
+
+    // TODO: Delete
+    // console.log(`NETWORK: ${ process.env.DFX_NETWORK }`);
+    // console.log(`NODE_ENV: ${ process.env.NODE_ENV }`);
+
+    if (process.env.DFX_NETWORK === "local") {
+      iiUrl = `http://localhost:8080/?canisterId=${IICanisterID}`;
+    } else if (process.env.DFX_NETWORK === "ic") {
+      iiUrl = `https://${IICanisterID}.ic0.app`;
+    } else {
+      iiUrl = `https://${IICanisterID}.dfinity.network`;
+    }
+
+    // TODO: Delete
+    iiUrl = `http://localhost:8080/?canisterId=${IICanisterID}`;
+
+    console.log(`iiUrl: ${iiUrl}`);
+
+    // Start Login process.
+    // First we have to create and AuthClient.
+    const authClient = await AuthClient.create();
+
+    // Login with Internet Identity.
+    await new Promise((resolve, reject) => {
+      authClient.login({
+        identityProvider: iiUrl,
+        onSuccess: resolve,
+        onError: reject,
+      });
+    });
+
+
+    // Get the identity from the auth client:
+    const identity = authClient.getIdentity();
+    // Using the identity obtained from the auth client,
+    // we can create an agent to interact with the IC.
+    const newAgent = new HttpAgent({ identity });
+    // TODO: Must comment out later!!!
+    // if (process.env.DFX_NETWORK === "local") {
+    newAgent.fetchRootKey();
+    // }
+    setAgent(newAgent);
+    // Using the interface description of our webapp,
+    // we create an Actor that we use to call the service methods.
+    const DEXActor = Actor.createActor(DEXidlFactory, {
+      newAgent,
+      canisterId: DEXCanisterId,
+    });
+    const principal = await authClient.getIdentity().getPrincipal();
+
+    // Get information about the tokens held by the Logged-in user.
+    getUserTokens(newAgent, principal);
+    // Set Order list
+    getOrders(newAgent);
+
+    setCurrentPrincipalId(principal.toText());
   };
 
   const handleDeposit = async (updateIndex) => {
@@ -341,6 +360,41 @@ const App = () => {
       console.log(`handleWithdraw: ${error} `);
     }
   };
+
+  const checkClientIdentity = async () => {
+    try {
+      const authClient = await AuthClient.create();
+      const resultAuthenticated = await authClient.isAuthenticated();
+      if (resultAuthenticated) {
+        const principal = authClient.getIdentity().getPrincipal();
+        console.log(`principal: ${principal.toText()}`);
+        setCurrentPrincipalId(principal.toText());
+
+        // Using the identity obtained from the auth client,
+        // we can create an agent to interact with the IC.
+        const identity = authClient.getIdentity();
+        const newAgent = new HttpAgent({ identity });
+        // TODO: Must comment out later!!!
+        // if (process.env.DFX_NETWORK === "local") {
+        newAgent.fetchRootKey();
+        // }
+
+        getUserTokens(newAgent, principal);
+        getOrders(newAgent);
+        setAgent(newAgent);
+      } else {
+        console.log(`isAuthenticated: ${resultAuthenticated}`);
+      }
+    } catch (error) {
+      console.log(`checkClientIdentity: ${error}`);
+    }
+  }
+
+  // ページがリロードされた時、以下の関数を実行
+  useEffect(() => {
+    console.log('useEffect');
+    checkClientIdentity();
+  }, [])
 
   return (
     <>
