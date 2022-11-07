@@ -368,7 +368,7 @@ const App = () => {
       );
 
     } catch (error) {
-      console.log(`handleDeposit: ${error} `);
+      console.log(`handleWithdraw: ${error} `);
     }
   };
 
