@@ -221,25 +221,16 @@ const App = () => {
   // Login Internet Identity handler
   const handleLogin = async () => {
     // Autofills the <input> for the II Url to point to the correct canister.
+    console.log(`process.env.DFX_NETWORK: ${process.env.DFX_NETWORK}`);
+
     let iiUrl;
-
-    // TODO: Delete
-    // console.log(`NETWORK: ${ process.env.DFX_NETWORK }`);
-    // console.log(`NODE_ENV: ${ process.env.NODE_ENV }`);
-
     if (process.env.DFX_NETWORK === "local") {
-      iiUrl = `http://localhost:8080/?canisterId=${IICanisterID}`;
+      iiUrl = `http://localhost:8000/?canisterId=${IICanisterID}`;
     } else if (process.env.DFX_NETWORK === "ic") {
       iiUrl = `https://${IICanisterID}.ic0.app`;
     } else {
       iiUrl = `https://${IICanisterID}.dfinity.network`;
     }
-
-    // TODO: Delete
-    iiUrl = `http://localhost:8080/?canisterId=${IICanisterID}`;
-
-    console.log(`iiUrl: ${iiUrl}`);
-
     // Start Login process.
     // First we have to create and AuthClient.
     const authClient = await AuthClient.create();
@@ -259,10 +250,10 @@ const App = () => {
     // Using the identity obtained from the auth client,
     // we can create an agent to interact with the IC.
     const newAgent = new HttpAgent({ identity });
-    // TODO: Must comment out later!!!
-    // if (process.env.DFX_NETWORK === "local") {
-    newAgent.fetchRootKey();
-    // }
+
+    if (process.env.DFX_NETWORK === "local") {
+      newAgent.fetchRootKey();
+    }
     setAgent(newAgent);
     // Using the interface description of our webapp,
     // we create an Actor that we use to call the service methods.
@@ -374,10 +365,10 @@ const App = () => {
         // we can create an agent to interact with the IC.
         const identity = authClient.getIdentity();
         const newAgent = new HttpAgent({ identity });
-        // TODO: Must comment out later!!!
-        // if (process.env.DFX_NETWORK === "local") {
-        newAgent.fetchRootKey();
-        // }
+
+        if (process.env.DFX_NETWORK === "local") {
+          newAgent.fetchRootKey();
+        }
 
         getUserTokens(newAgent, principal);
         getOrders(newAgent);
