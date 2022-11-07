@@ -130,11 +130,12 @@ const App = () => {
         return;
       }
 
-      // Update Order List
+      // Update order list
       const updateOrders = await DEXActor.getOrders();
       setOrderList(updateOrders);
 
-      // TODO: Update user balances
+      // Update user balances
+      getUserTokens(agent, Principal.fromText(currentPrincipalId));
 
       console.log("Trade Successful!");
     } catch (error) {
