@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import './App.css';
 
 import { Actor, HttpAgent } from "@dfinity/agent";
@@ -7,7 +7,7 @@ import { Principal } from '@dfinity/principal';
 
 import { canisterId as IICanisterID }
   from "../../declarations/internet_identity";
-import { canisterId as DEXCanisterId, icp_basic_dex_backend }
+import { canisterId as DEXCanisterId }
   from "../../declarations/icp_basic_dex_backend";
 import { idlFactory as DEXidlFactory }
   from "../../declarations/icp_basic_dex_backend/icp_basic_dex_backend.did.js";
@@ -35,13 +35,9 @@ const App = () => {
     },
   ];
 
-  const [identity, setIdentity] = useState();
-  const [authClient, setAuthClient] = useState();
   const [agent, setAgent] = useState();
 
   const [currentPrincipalId, setCurrentPrincipalId] = useState("");
-  // TODO: Delete if not used
-  const [currentAccountId, setCurrentAccountId] = useState("");
 
   const [userTokens, setUserTokens] = useState([])
 
@@ -67,7 +63,6 @@ const App = () => {
     event.preventDefault();
     console.log(order);
 
-    // TODO: creatActorでDEXのアクターを作成、placeOrderを呼び出す
     const DEXActor = Actor.createActor(DEXidlFactory, {
       agent,
       canisterId: DEXCanisterId,
@@ -175,27 +170,6 @@ const App = () => {
     }
   }
 
-  // Connect Wallet handler
-  const handleConnectWallet = async () => {
-    if (currentPrincipalId) {
-      console.log("Connected!");
-      return;
-    }
-    try {
-      // Request a new connection to the Plug user.
-      // if declined, the method will throw an error.
-      const isConnected = await window.ic.plug.requestConnect();
-      console.log(`isConnected: ${isConnected}`);
-
-      // Set user info.
-      setCurrentPrincipalId(window.ic.plug.principalId);
-      setCurrentAccountId(window.ic.plug.accountId);
-    } catch (error) {
-      alert("Plug wallet connection was refused");
-      console.log(error);
-    }
-  };
-
   // Login Internet Identity handler
   const handleLogin = async () => {
     // Autofills the <input> for the II Url to point to the correct canister.
@@ -284,10 +258,6 @@ const App = () => {
 
     // Set Order list
     const orders = await DEXActor.getOrders();
-
-    console.log(`1. orderList: ${orders}`);
-    console.dir(`2. orderList: ${orders}`);
-
     setOrderList(orders);
   };
 
@@ -383,30 +353,6 @@ const App = () => {
             Login Internet Identity
           </button>
         </li>
-        <li style={{ float: 'right' }}>
-          {!currentPrincipalId && (
-            <button
-              id="button-connect"
-              className="button-rainbow"
-              onClick={handleConnectWallet}>
-              <div className="button-container">
-                {/* <img src="plug-light.svg" alt="Plug logo" class="plug-icon"> */}
-                <span id="btn-title">Connect with Plug</span>
-              </div>
-            </button>
-          )}
-          {currentPrincipalId && (
-            <button
-              id="button-connect"
-              className="button-rainbow"
-              onClick={handleConnectWallet}>
-              <div className="button-container">
-                {/* <img src="plug-light.svg" alt="Plug logo" class="plug-icon"> */}
-                <span id="btn-title">Plug Connected</span>
-              </div>
-            </button>
-          )}
-        </li>
       </ul>
 
       <main className="app">
@@ -416,7 +362,6 @@ const App = () => {
             {/* {window.ic.plug.isConnected() && */}
             <h2>User</h2>
             <li>principal ID: {currentPrincipalId}</li>
-            <li>account ID: {currentAccountId}</li>
             <table>
               <tbody>
                 <tr>
