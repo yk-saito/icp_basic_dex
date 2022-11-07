@@ -257,8 +257,6 @@ const App = () => {
       agent,
       canisterId: DEXCanisterId,
     });
-    // Call whoami which returns the principal (user id) of the current user.
-    // const principal = await DEXActor.whoami();
     const principal = await authClient.getIdentity().getPrincipal();
 
     // Get information about the tokens held by the Logged-in user.
