@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import './App.css';
 
 import { Actor, HttpAgent } from "@dfinity/agent";
@@ -7,7 +7,7 @@ import { Principal } from '@dfinity/principal';
 
 import { canisterId as IICanisterID }
   from "../../declarations/internet_identity";
-import { canisterId as DEXCanisterId, icp_basic_dex_backend }
+import { canisterId as DEXCanisterId }
   from "../../declarations/icp_basic_dex_backend";
 import { idlFactory as DEXidlFactory }
   from "../../declarations/icp_basic_dex_backend/icp_basic_dex_backend.did.js";
@@ -35,30 +35,13 @@ const App = () => {
     },
   ];
 
-  const [identity, setIdentity] = useState();
-  const [authClient, setAuthClient] = useState();
   const [agent, setAgent] = useState();
 
   const [currentPrincipalId, setCurrentPrincipalId] = useState("");
-  // TODO: Delete if not used
-  const [currentAccountId, setCurrentAccountId] = useState("");
 
   const [userTokens, setUserTokens] = useState([])
 
-  const [orders, setOrders] = useState([
-    // TODO: Delete
-    {
-      from: 'HOGE',
-      fromAmount: 200,
-      to: 'PIYO',
-      toAmount: 300,
-    },
-    {
-      from: 'PIYO',
-      fromAmount: 400,
-      to: 'HOGE',
-      toAmount: 300,
-    },]);
+  const [orderList, setOrderList] = useState([]);
 
   const [order, setOrder] = useState({
     from: '',
@@ -76,34 +59,116 @@ const App = () => {
     });
   };
 
-  const handleSubmitOrder = (event) => {
+  const handleSubmitOrder = async (event) => {
     event.preventDefault();
     console.log(order);
 
-    const newOrders = [...orders, order];
-    setOrders(newOrders);
-  }
+    const DEXActor = Actor.createActor(DEXidlFactory, {
+      agent,
+      canisterId: DEXCanisterId,
+    });
 
-  // Connect Wallet handler
-  const handleConnectWallet = async () => {
-    if (currentPrincipalId) {
-      console.log("Connected!");
-      return;
+    let fromPrincipal;
+    if (order.from === "THG") {
+      fromPrincipal = Principal.fromText(HogeDIP20canisterId);
+    } else {
+      fromPrincipal = Principal.fromText(PiyoDIP20canisterId);
     }
-    try {
-      // Request a new connection to the Plug user.
-      // if declined, the method will throw an error.
-      const isConnected = await window.ic.plug.requestConnect();
-      console.log(`isConnected: ${isConnected}`);
 
-      // Set user info.
-      setCurrentPrincipalId(window.ic.plug.principalId);
-      setCurrentAccountId(window.ic.plug.accountId);
+    let toPrincipal;
+    if (order.to === "THG") {
+      toPrincipal = Principal.fromText(HogeDIP20canisterId);
+    } else {
+      toPrincipal = Principal.fromText(PiyoDIP20canisterId);
+    }
+
+    try {
+      const resultPlace
+        = await DEXActor.placeOrder(
+          fromPrincipal,
+          Number(order.fromAmount),
+          toPrincipal,
+          Number(order.toAmount),
+        );
+      // Check Error
+      if (!resultPlace.Ok) {
+        alert(`Error: ${Object.keys(resultPlace.Err)[0]}`);
+        return;
+      }
+
+      // Update Order List
+      const updateOrders = await DEXActor.getOrders();
+      setOrderList(updateOrders);
+
+      console.log(`Created order:  ${resultPlace.Ok[0].id}`);
     } catch (error) {
-      alert("Plug wallet connection was refused");
-      console.log(error);
+      console.log(`handleSubmitOrder: ${error} `);
     }
   };
+
+  // Buy order hander
+  const handleBuyOrder = async (order) => {
+    // Create DEX actor
+    const DEXActor = Actor.createActor(DEXidlFactory, {
+      agent,
+      canisterId: DEXCanisterId,
+    });
+    try {
+
+      // Call placeOrder
+      const resultPlace
+        = await DEXActor.placeOrder(
+          order.to,
+          Number(order.toAmount),
+          order.from,
+          Number(order.fromAmount),
+        );
+
+      // Check Error
+      if (!resultPlace.Ok) {
+        alert(`Error: ${Object.keys(resultPlace.Err)[0]}`);
+        return;
+      }
+
+      // Update Order List
+      const updateOrders = await DEXActor.getOrders();
+      setOrderList(updateOrders);
+
+      // TODO: Update user balances
+
+      console.log("Trade Successful!");
+    } catch (error) {
+      console.log(`handleBuyOrder: ${error} `);
+    };
+  };
+
+
+  // Cancel order handler
+  const handleCancelOrder = async (id) => {
+    try {
+      const DEXActor = Actor.createActor(DEXidlFactory, {
+        agent,
+        canisterId: DEXCanisterId,
+      });
+
+      // Call cancelOrder
+      const resultCancel = await DEXActor.cancelOrder(id);
+
+      // Check Error
+      if (!resultCancel.Ok) {
+        alert(`Error: ${Object.keys(resultCancel.Err)}`);
+        return;
+      }
+
+      // Update orderbook
+      const updateOrders = await DEXActor.getOrders();
+      setOrderList(updateOrders);
+
+      console.log(`Canceled order ID: ${resultCancel.Ok}`);
+    } catch (error) {
+      console.log(`handleCancelOrder: ${error}`);
+    }
+  }
 
   // Login Internet Identity handler
   const handleLogin = async () => {
@@ -190,6 +255,10 @@ const App = () => {
       }
       setUserTokens((userTokens) => [...userTokens, userToken]);
     }
+
+    // Set Order list
+    const orders = await DEXActor.getOrders();
+    setOrderList(orders);
   };
 
   const handleDeposit = async (updateIndex) => {
@@ -205,13 +274,13 @@ const App = () => {
 
     try {
       // Approve user token transfer by DEX.
-      const approveResult
+      const resultApprove
         = await tokenActor.approve(Principal.fromText(DEXCanisterId), 5000);
-      console.log(`approveResult: ${approveResult.Ok}`);
+      console.log(`resultApprove: ${resultApprove.Ok}`);
       // Deposit token from token canister to DEX.
-      const depositResult
+      const resultDeposit
         = await DEXActor.deposit(Principal.fromText(tokenCanisters[updateIndex].canisterId));
-      console.log(`depositResult: ${depositResult.Ok}`);
+      console.log(`resultDeposit: ${resultDeposit.Ok}`);
       // Get updated balance of token Canister.
       const balance
         = await tokenActor.balanceOf(Principal.fromText(currentPrincipalId));
@@ -247,9 +316,9 @@ const App = () => {
     });
 
     try {
-      const withdrawResult
+      const resultWithdraw
         = await DEXActor.withdraw(Principal.fromText(tokenCanisters[updateIndex].canisterId), 5000);
-      console.log(`withdrawResult: ${withdrawResult.Ok}`);
+      console.log(`resultWithdraw: ${resultWithdraw.Ok}`);
       // Get updated balance of token Canister.
       const balance
         = await tokenActor.balanceOf(Principal.fromText(currentPrincipalId));
@@ -269,7 +338,7 @@ const App = () => {
       );
 
     } catch (error) {
-      console.log(`handleDeposit: ${error} `);
+      console.log(`handleWithdraw: ${error} `);
     }
   };
 
@@ -284,30 +353,6 @@ const App = () => {
             Login Internet Identity
           </button>
         </li>
-        <li style={{ float: 'right' }}>
-          {!currentPrincipalId && (
-            <button
-              id="button-connect"
-              className="button-rainbow"
-              onClick={handleConnectWallet}>
-              <div className="button-container">
-                {/* <img src="plug-light.svg" alt="Plug logo" class="plug-icon"> */}
-                <span id="btn-title">Connect with Plug</span>
-              </div>
-            </button>
-          )}
-          {currentPrincipalId && (
-            <button
-              id="button-connect"
-              className="button-rainbow"
-              onClick={handleConnectWallet}>
-              <div className="button-container">
-                {/* <img src="plug-light.svg" alt="Plug logo" class="plug-icon"> */}
-                <span id="btn-title">Plug Connected</span>
-              </div>
-            </button>
-          )}
-        </li>
       </ul>
 
       <main className="app">
@@ -317,7 +362,6 @@ const App = () => {
             {/* {window.ic.plug.isConnected() && */}
             <h2>User</h2>
             <li>principal ID: {currentPrincipalId}</li>
-            <li>account ID: {currentAccountId}</li>
             <table>
               <tbody>
                 <tr>
@@ -376,15 +420,15 @@ const App = () => {
                     onChange={handleChangeOrder}
                     required>
                     <option value="">Select token</option>
-                    <option value="HOGEDIP20">HOGEDIP20</option>
-                    <option value="PIYODIP20">PIYODIP20</option>
+                    <option value="THG">THG</option>
+                    <option value="TPY">TPY</option>
                   </select>
                 </div>
                 <div>
                   <label>Amount</label>
                   <input
                     name="fromAmount"
-                    type="fromAmount"
+                    type="number"
                     onChange={handleChangeOrder}
                     required
                   />
@@ -400,15 +444,15 @@ const App = () => {
                     onChange={handleChangeOrder}
                     required>
                     <option value="">Select token</option>
-                    <option value="HOGEDIP20">HOGEDIP20</option>
-                    <option value="PIYODIP20">PIYODIP20</option>
+                    <option value="THG">THG</option>
+                    <option value="TPY">TPY</option>
                   </select>
                 </div>
                 <div>
                   <label>Amount</label>
                   <input
                     name="toAmount"
-                    type="toAmount"
+                    type="number"
                     onChange={handleChangeOrder}
                     required
                   />
@@ -432,18 +476,24 @@ const App = () => {
                 <th>Amount</th>
                 <th>Action</th>
               </tr>
-              {orders.map((order, index) => {
+              {orderList.map((order, index) => {
                 return (
                   <tr key={`${index}: ${order.token} `} >
-                    <td data-th="From">{order.from}</td>
-                    <td data-th="Amount">{order.fromAmount}</td>
+                    <td data-th="From">{order.from.toString()}</td>
+                    <td data-th="Amount">{order.fromAmount.toString()}</td>
                     <td>→</td>
-                    <td data-th="To">{order.to}</td>
-                    <td data-th="Amount">{order.toAmount}</td>
+                    <td data-th="To">{order.to.toString()}</td>
+                    <td data-th="Amount">{order.toAmount.toString()}</td>
                     <td data-th="Action">
                       <div>
-                        <button className="btn-buy">Buy</button>
-                        <button className="btn-cancel">Cancel</button>
+                        <button
+                          className="btn-buy"
+                          onClick={() => handleBuyOrder(order)}
+                        >Buy</button>
+                        <button
+                          className="btn-cancel"
+                          onClick={() => handleCancelOrder(order.id)}
+                        >Cancel</button>
                       </div>
                     </td>
                   </tr>
@@ -455,6 +505,6 @@ const App = () => {
       </main>
     </>
   )
-}
+};
 
 export default App;
