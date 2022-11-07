@@ -206,6 +206,17 @@ const App = () => {
     setUserTokens(tokens);
   }
 
+  const getOrders = async (agent) => {
+    const DEXActor = Actor.createActor(DEXidlFactory, {
+      agent,
+      canisterId: DEXCanisterId,
+    });
+
+    // Set Order list
+    const orders = await DEXActor.getOrders();
+    setOrderList(orders);
+  }
+
   // Login Internet Identity handler
   const handleLogin = async () => {
     // Autofills the <input> for the II Url to point to the correct canister.
@@ -261,12 +272,10 @@ const App = () => {
 
     // Get information about the tokens held by the Logged-in user.
     getUserTokens(agent, principal);
-
     // Set Order list
-    const orders = await DEXActor.getOrders();
+    getOrders(agent);
 
     setCurrentPrincipalId(principal.toText());
-    setOrderList(orders);
   };
 
   const handleDeposit = async (updateIndex) => {
@@ -369,7 +378,7 @@ const App = () => {
         // }
 
         getUserTokens(createAgent, principal);
-        // getOrders();
+        getOrders(createAgent);
         setAgent(createAgent);
       } else {
         console.log(`isAuthenticated: ${resultAuthenticated}`);
