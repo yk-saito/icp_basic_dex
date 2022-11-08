@@ -8,7 +8,7 @@ import { idlFactory as DEXidlFactory }
 import { Principal } from '@dfinity/principal';
 
 export const ListOrder = (props) => {
-  const { agent, orderList, updateOrderList } = props;
+  const { agent, currentPrincipalId, orderList, updateOrderList, updateUserTokens } = props;
 
   // Buy order hander
   const handleBuyOrder = async (order) => {

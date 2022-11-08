@@ -167,8 +167,10 @@ const App = () => {
         />
         <ListOrder
           agent={agent}
+          currentPrincipalId={currentPrincipalId}
           orderList={orderList}
           updateOrderList={updateOrderList}
+          updateUserTokens={updateUserTokens}
         />
       </main>
     </>
