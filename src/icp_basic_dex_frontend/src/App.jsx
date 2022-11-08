@@ -20,6 +20,13 @@ import { canisterId as PiyoDIP20canisterId }
 import { idlFactory as PiyoidlFactory }
   from '../../declarations/PiyoDIP20/PiyoDIP20.did.js';
 
+import { Header } from './components/Header';
+import { UserBoard } from './components/UserBoard';
+import { PlaceOrder } from './components/PlaceOrder';
+import { ListOrder } from './components/ListOrder';
+
+// import { UserTokensProvider } from './context/UserTokens';
+
 const App = () => {
 
   const tokenCanisters = [
@@ -39,7 +46,7 @@ const App = () => {
 
   const [currentPrincipalId, setCurrentPrincipalId] = useState("");
 
-  const [userTokens, setUserTokens] = useState([])
+  const [userTokens, setUserTokens] = useState([]);
 
   const [orderList, setOrderList] = useState([]);
 
@@ -135,7 +142,8 @@ const App = () => {
       setOrderList(updateOrders);
 
       // Update user balances
-      getUserTokens(agent, Principal.fromText(currentPrincipalId));
+      const tokens = await getUserTokens(agent, Principal.fromText(currentPrincipalId));
+      setUserTokens(tokens);
 
       console.log("Trade Successful!");
     } catch (error) {
@@ -204,7 +212,8 @@ const App = () => {
       }
       tokens.push(userToken);
     }
-    setUserTokens(tokens);
+    // setUserTokens(tokens);
+    return tokens;
   }
 
   const getOrders = async (agent) => {
@@ -264,14 +273,46 @@ const App = () => {
     const principal = await authClient.getIdentity().getPrincipal();
 
     // Get information about the tokens held by the Logged-in user.
-    getUserTokens(newAgent, principal);
+    const tokens = await getUserTokens(newAgent, principal);
+    setUserTokens(tokens);
     // Set Order list
     getOrders(newAgent);
 
     setCurrentPrincipalId(principal.toText());
   };
 
+  const checkClientIdentity = async () => {
+    try {
+      const authClient = await AuthClient.create();
+      const resultAuthenticated = await authClient.isAuthenticated();
+      if (resultAuthenticated) {
+        const principal = authClient.getIdentity().getPrincipal();
+        console.log(`principal: ${principal.toText()}`);
+        setCurrentPrincipalId(principal.toText());
+
+        // Using the identity obtained from the auth client,
+        // we can create an agent to interact with the IC.
+        const identity = authClient.getIdentity();
+        const newAgent = new HttpAgent({ identity });
+
+        if (process.env.DFX_NETWORK === "local") {
+          newAgent.fetchRootKey();
+        }
+
+        const tokens = await getUserTokens(newAgent, principal);
+        setUserTokens(tokens);
+        getOrders(newAgent);
+        setAgent(newAgent);
+      } else {
+        console.log(`isAuthenticated: ${resultAuthenticated}`);
+      }
+    } catch (error) {
+      console.log(`checkClientIdentity: ${error}`);
+    }
+  }
+
   const handleDeposit = async (updateIndex) => {
+    // const [userTokens, setUserTokens] = useUserTokensContext();
     const tokenActor = Actor.createActor(tokenCanisters[updateIndex].factory, {
       agent,
       canisterId: tokenCanisters[updateIndex].canisterId,
@@ -352,35 +393,6 @@ const App = () => {
     }
   };
 
-  const checkClientIdentity = async () => {
-    try {
-      const authClient = await AuthClient.create();
-      const resultAuthenticated = await authClient.isAuthenticated();
-      if (resultAuthenticated) {
-        const principal = authClient.getIdentity().getPrincipal();
-        console.log(`principal: ${principal.toText()}`);
-        setCurrentPrincipalId(principal.toText());
-
-        // Using the identity obtained from the auth client,
-        // we can create an agent to interact with the IC.
-        const identity = authClient.getIdentity();
-        const newAgent = new HttpAgent({ identity });
-
-        if (process.env.DFX_NETWORK === "local") {
-          newAgent.fetchRootKey();
-        }
-
-        getUserTokens(newAgent, principal);
-        getOrders(newAgent);
-        setAgent(newAgent);
-      } else {
-        console.log(`isAuthenticated: ${resultAuthenticated}`);
-      }
-    } catch (error) {
-      console.log(`checkClientIdentity: ${error}`);
-    }
-  }
-
   // ページがリロードされた時、以下の関数を実行
   useEffect(() => {
     console.log('useEffect');
@@ -389,164 +401,30 @@ const App = () => {
 
   return (
     <>
-      {/* HEADER */}
-      <ul>
-        <li>SIMPLE DEX</li>
-        <li style={{ float: 'right' }}>
-          <button
-            onClick={handleLogin}>
-            Login Internet Identity
-          </button>
-        </li>
-      </ul>
-
+      <Header
+        handleLogin={handleLogin}
+      />
       <main className="app">
-        {/* LIST USER TOKEN */}
-        {currentPrincipalId &&
-          <div className="token-list">
-            {/* {window.ic.plug.isConnected() && */}
-            <h2>User</h2>
-            <li>principal ID: {currentPrincipalId}</li>
-            <table>
-              <tbody>
-                <tr>
-                  <th>Token</th>
-                  <th>Balance</th>
-                  <th>DEX Balance</th>
-                  <th>Fee</th>
-                  <th>Action</th>
-                </tr>
-                {userTokens.map((token, index) => {
-                  return (
-                    <tr key={`${index} : ${token.symbol} `}>
-                      <td data-th="Token">{token.symbol}</td>
-                      <td data-th="Balance">{token.balance}</td>
-                      <td data-th="DEX Balance">{token.dexBalance}</td>
-                      <td data-th="Fee">{token.fee}</td>
-                      <td data-th="Action">
-                        <div className="btn-token">
-                          <button
-                            className='btn-deposit'
-                            onClick={() => handleDeposit(index)}
-                          >
-                            Deposit
-                          </button>
-                          <button
-                            className='btn-withdraw'
-                            onClick={() => handleWithdraw(index)}
-                          >
-                            Withdraw
-                          </button>
-                          <button className='btn-faucet'>Faucet</button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        }
-
-        {/* CREATE ORDER */}
-        {currentPrincipalId &&
-          <div className="create-order-area">
-            <div className="title">
-              <p>CREATE ORDER</p>
-              <button>+</button>
-            </div>
-            <form className="form" onSubmit={handleSubmitOrder} >
-              <div>
-                <div>
-                  <label>From</label>
-                  <select
-                    name="from"
-                    type="from"
-                    onChange={handleChangeOrder}
-                    required>
-                    <option value="">Select token</option>
-                    <option value="THG">THG</option>
-                    <option value="TPY">TPY</option>
-                  </select>
-                </div>
-                <div>
-                  <label>Amount</label>
-                  <input
-                    name="fromAmount"
-                    type="number"
-                    onChange={handleChangeOrder}
-                    required
-                  />
-                </div>
-                <div>
-                  <span>→</span>
-                </div>
-                <div>
-                  <label>To</label>
-                  <select
-                    name="to"
-                    type="to"
-                    onChange={handleChangeOrder}
-                    required>
-                    <option value="">Select token</option>
-                    <option value="THG">THG</option>
-                    <option value="TPY">TPY</option>
-                  </select>
-                </div>
-                <div>
-                  <label>Amount</label>
-                  <input
-                    name="toAmount"
-                    type="number"
-                    onChange={handleChangeOrder}
-                    required
-                  />
-                </div>
-              </div>
-              <button type="submit">Submit Order</button>
-            </form>
-          </div>
-        }
-
-        {/* LIST ORDER */}
-        <div className="order-list" style={{ backgroundColor: "rgb(8, 2, 38)" }}>
-          <p>Order</p>
-          <table>
-            <tbody>
-              <tr>
-                <th>From</th>
-                <th>Amount</th>
-                <th></th>
-                <th>To</th>
-                <th>Amount</th>
-                <th>Action</th>
-              </tr>
-              {orderList.map((order, index) => {
-                return (
-                  <tr key={`${index}: ${order.token} `} >
-                    <td data-th="From">{order.from.toString()}</td>
-                    <td data-th="Amount">{order.fromAmount.toString()}</td>
-                    <td>→</td>
-                    <td data-th="To">{order.to.toString()}</td>
-                    <td data-th="Amount">{order.toAmount.toString()}</td>
-                    <td data-th="Action">
-                      <div>
-                        <button
-                          className="btn-buy"
-                          onClick={() => handleBuyOrder(order)}
-                        >Buy</button>
-                        <button
-                          className="btn-cancel"
-                          onClick={() => handleCancelOrder(order.id)}
-                        >Cancel</button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        {/* <UserTokensProvider> */}
+        <UserBoard
+          Actor={Actor}
+          tokenCanisters={tokenCanisters}
+          currentPrincipalId={currentPrincipalId}
+          userTokens={userTokens}
+          handleDeposit={handleDeposit}
+          handleWithdraw={handleWithdraw}
+        />
+        {/* </UserTokensProvider> */}
+        <PlaceOrder
+          currentPrincipalId={currentPrincipalId}
+          handleChangeOrder={handleChangeOrder}
+          handleSubmitOrder={handleSubmitOrder}
+        />
+        <ListOrder
+          orderList={orderList}
+          handleBuyOrder={handleBuyOrder}
+          handleCancelOrder={handleCancelOrder}
+        />
       </main>
     </>
   )
