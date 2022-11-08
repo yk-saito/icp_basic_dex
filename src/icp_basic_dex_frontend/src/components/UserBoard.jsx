@@ -96,6 +96,25 @@ export const UserBoard = (props) => {
     }
   };
 
+  const handleFaucet = async (index) => {
+    alert(`Called handleFaucet()`);
+    // TODO: Call mint method in DIP20 token canister
+    const tokenActor = Actor.createActor(tokenCanisters[index].factory, {
+      agent,
+      canisterId: tokenCanisters[index].canisterId,
+    });
+
+    try {
+      const resultFaucet
+        = await tokenActor.mint(Principal.fromText(currentPrincipalId), 10000);
+
+      // TODO: Update user board
+    } catch (error) {
+      console.log(`handleFaucet: ${error}`);
+    }
+
+  }
+
   return (
     <>
       {currentPrincipalId &&
@@ -132,7 +151,12 @@ export const UserBoard = (props) => {
                         >
                           Withdraw
                         </button>
-                        <button className='btn-faucet'>Faucet</button>
+                        <button
+                          className='btn-faucet'
+                          onClick={() => handleFaucet(index)}
+                        >
+                          Faucet
+                        </button>
                       </div>
                     </td>
                   </tr>
