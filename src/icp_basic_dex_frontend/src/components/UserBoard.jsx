@@ -1,8 +1,100 @@
 import React from 'react';
-// import { useUserTokensContext } from '../context/UserTokens';
+import { Actor } from "@dfinity/agent";
+import { Principal } from '@dfinity/principal';
+import { canisterId as DEXCanisterId }
+  from '../../../declarations/icp_basic_dex_backend';
+import { idlFactory as DEXidlFactory }
+  from '../../../declarations/icp_basic_dex_backend/icp_basic_dex_backend.did.js';
 
 export const UserBoard = (props) => {
-  const { currentPrincipalId, userTokens, handleDeposit, handleWithdraw } = props;
+  const {
+    agent,
+    currentPrincipalId,
+    tokenCanisters,
+    userTokens,
+    setUserTokens,
+  } = props;
+
+  const handleDeposit = async (updateIndex) => {
+    const tokenActor = Actor.createActor(tokenCanisters[updateIndex].factory, {
+      agent,
+      canisterId: tokenCanisters[updateIndex].canisterId,
+    });
+
+    const DEXActor = Actor.createActor(DEXidlFactory, {
+      agent,
+      canisterId: DEXCanisterId,
+    });
+
+    try {
+      // Approve user token transfer by DEX.
+      const resultApprove
+        = await tokenActor.approve(Principal.fromText(DEXCanisterId), 5000);
+      console.log(`resultApprove: ${resultApprove.Ok}`);
+      // Deposit token from token canister to DEX.
+      const resultDeposit
+        = await DEXActor.deposit(Principal.fromText(tokenCanisters[updateIndex].canisterId));
+      console.log(`resultDeposit: ${resultDeposit.Ok}`);
+      // Get updated balance of token Canister.
+      const balance
+        = await tokenActor.balanceOf(Principal.fromText(currentPrincipalId));
+      // Get updated balance in DEX.
+      const dexBalance
+        = await DEXActor.getBalance(Principal.fromText(tokenCanisters[updateIndex].canisterId));
+
+      // Set new user infomation.
+      setUserTokens(
+        userTokens.map((userToken, index) => (
+          index === updateIndex ? {
+            symbol: userToken.symbol,
+            balance: balance.toString(),
+            dexBalance: dexBalance.toString(),
+            fee: userToken.fee,
+          } : userToken))
+      );
+
+    } catch (error) {
+      console.log(`handleDeposit: ${error} `);
+    }
+  };
+
+  const handleWithdraw = async (updateIndex) => {
+    const tokenActor = Actor.createActor(tokenCanisters[updateIndex].factory, {
+      agent,
+      canisterId: tokenCanisters[updateIndex].canisterId,
+    });
+
+    const DEXActor = Actor.createActor(DEXidlFactory, {
+      agent,
+      canisterId: DEXCanisterId,
+    });
+
+    try {
+      const resultWithdraw
+        = await DEXActor.withdraw(Principal.fromText(tokenCanisters[updateIndex].canisterId), 5000);
+      console.log(`resultWithdraw: ${resultWithdraw.Ok}`);
+      // Get updated balance of token Canister.
+      const balance
+        = await tokenActor.balanceOf(Principal.fromText(currentPrincipalId));
+      // Get updated balance in DEX.
+      const dexBalance
+        = await DEXActor.getBalance(Principal.fromText(tokenCanisters[updateIndex].canisterId));
+
+      // Set new user infomation.
+      setUserTokens(
+        userTokens.map((userToken, index) => (
+          index === updateIndex ? {
+            symbol: userToken.symbol,
+            balance: balance.toString(),
+            dexBalance: dexBalance.toString(),
+            fee: userToken.fee,
+          } : userToken))
+      );
+
+    } catch (error) {
+      console.log(`handleWithdraw: ${error} `);
+    }
+  };
 
   return (
     <>
